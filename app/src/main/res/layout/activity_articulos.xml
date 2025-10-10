@@ -7,63 +7,85 @@
     android:layout_height="match_parent"
     tools:context=".Articulos">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <TextView
+        android:id="@+id/titleTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Artículos"
+        android:textAlignment="center"
+        android:textSize="30sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:layout_width="200dp"
-            android:layout_height="wrap_content"
-            android:text="Articulos"
-            android:textAlignment="center"
-            android:textSize="30sp"
-            android:layout_gravity="center"/>
-
-
-    </LinearLayout>
     <LinearLayout
-        android:id="@+id/miLinearLayout"
+        android:id="@+id/bottomBarContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:background="#488079"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:gravity="center">
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
-            android:id="@+id/btnRegresar"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:backgroundTint="#BD0000"
-            android:text="Regresar"
-            android:textSize="20sp" />
-        <Button
-            android:id="@+id/btnIngredientes"
-            android:layout_width="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingTop="8dp">
+
+            <Button
+                android:id="@+id/btnAgregar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#1CBD00"
+                android:text="+"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btnIngredientes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#1CBD00"
+                android:text="Ingredientes"
+                android:textSize="20sp" />
+
+            <Button
+                android:id="@+id/btnZonas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#1CBD00"
+                android:text="Zonas"
+                android:textSize="20sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:backgroundTint="#1CBD00"
-            android:text="Ingredientes"
-            android:textSize="20sp" />
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingBottom="8dp">
 
+            <Button
+                android:id="@+id/btnRegresar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#BD0000"
+                android:text="Regresar"
+                android:textSize="20sp" />
 
-
-        <Button
-            android:id="@+id/btnZonas"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="#1CBD00"
-            android:text="Zonas"
-            android:textSize="20sp" />
-
+            <Button
+                android:id="@+id/btnCategorias"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#1CBD00"
+                android:text="Categorias"
+                android:textSize="20sp" />
+        </LinearLayout>
     </LinearLayout>
+
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
