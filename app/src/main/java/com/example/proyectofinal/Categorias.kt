@@ -17,7 +17,7 @@ import com.example.proyectofinal.network.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.launch
 
-class Categorias : AppCompatActivity() { // Nombre de la clase cambiado
+class Categorias : AppCompatActivity() {
 
     private lateinit var categoriasRecyclerView: RecyclerView
     private lateinit var categoriasAdapter: CategoriasAdapter
