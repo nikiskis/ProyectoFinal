@@ -7,92 +7,81 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-<!--    <LinearLayout-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:orientation="vertical"-->
-<!--        app:layout_constraintBottom_toBottomOf="parent"-->
-<!--        app:layout_constraintEnd_toEndOf="parent"-->
-<!--        app:layout_constraintStart_toStartOf="parent"-->
-<!--        app:layout_constraintTop_toTopOf="parent">-->
-
-<!--        <TextView-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Comanda maestra"-->
-<!--            android:textSize="30sp"-->
-<!--            android:textAlignment="center"-->
-<!--            app:layout_constraintBottom_toBottomOf="parent"-->
-<!--            app:layout_constraintEnd_toEndOf="parent"-->
-<!--            app:layout_constraintStart_toStartOf="parent"-->
-<!--            app:layout_constraintTop_toTopOf="parent" />-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnPedidos"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Pedidos"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnCorteCaja"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Corte de Caja"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnEstadisticas"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Estadísticas"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnArticulos"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Artículos"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnProveedores"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Proveedores"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--        <Button-->
-<!--            android:id="@+id/btnListaFaltantes"-->
-<!--            android:layout_width="200dp"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:text="Lista de Faltantes"-->
-<!--            android:layout_marginBottom="8dp"-->
-<!--            android:backgroundTint="#00A9BD"-->
-<!--            android:textSize="20sp"/>-->
-
-<!--    </LinearLayout>-->
-    <TextView
-        android:id="@+id/resultsTextView"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Cargando datos..."
-        android:textSize="18sp"
-        android:padding="16dp"
+        android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Comanda maestra"
+            android:textSize="30sp"
+            android:textAlignment="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/btnPedidos"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Pedidos"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+        <Button
+            android:id="@+id/btnCorteCaja"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Corte de Caja"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+        <Button
+            android:id="@+id/btnEstadisticas"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Estadísticas"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+        <Button
+            android:id="@+id/btnArticulos"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Artículos"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+        <Button
+            android:id="@+id/btnProveedores"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Proveedores"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+        <Button
+            android:id="@+id/btnListaFaltantes"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:text="Lista de Faltantes"
+            android:layout_marginBottom="8dp"
+            android:backgroundTint="#00A9BD"
+            android:textSize="20sp"/>
+
+    </LinearLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
