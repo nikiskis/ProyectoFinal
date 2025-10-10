@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import com.example.proyectofinal.Adapter.Categoria
 
 class Articulos : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,9 +21,14 @@ class Articulos : AppCompatActivity() {
         }
 
         val botonArticulos = findViewById<Button>(R.id.btnZonas)
-
         botonArticulos.setOnClickListener {
             val intent = Intent(this, Zonas::class.java)
+            startActivity(intent)
+        }
+
+        val botonCategorias = findViewById<Button>(R.id.btnCategorias)
+        botonCategorias.setOnClickListener {
+            val intent = Intent(this, Categorias::class.java)
             startActivity(intent)
         }
 

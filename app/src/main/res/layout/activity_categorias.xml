@@ -24,7 +24,7 @@
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/CategoriasRecyclerView"
+        android:id="@+id/categoriasRecyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintTop_toBottomOf="@id/headerLayout"
