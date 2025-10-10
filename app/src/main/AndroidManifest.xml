@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProyectoFinal">
         <activity
+            android:name=".Categorias"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
@@ -28,7 +31,6 @@
         <activity
             android:name=".Articulos"
             android:exported="false" />
-
     </application>
 
 </manifest>
