@@ -22,7 +22,7 @@
                 android:text="Nombre del Ingrediente"
                 android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@android:color/black"/>
+                android:textColor="#102CBD"/>
 
             <TextView
                 android:id="@+id/estadoTextView"

@@ -37,5 +37,11 @@ class Articulos : AppCompatActivity() {
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
         }
+
+        val botonIngredientes = findViewById<Button>(R.id.btnIngredientes);
+        botonIngredientes.setOnClickListener {
+            val intent = Intent(this, Ingredientes::class.java)
+            startActivity(intent)
+        }
     }
 }
