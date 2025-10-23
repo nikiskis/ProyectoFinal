@@ -1,4 +1,4 @@
-package com.example.proyectofinal.Adapter
+package com.example.proyectofinal.adapter
 
 import android.app.AlertDialog
 import android.content.Context
@@ -64,7 +64,6 @@ class ZonasAdapter(
                 if (nuevoNombre.isNotBlank() && nuevoNombre != zona.nombre) {
                     CoroutineScope(Dispatchers.Main).launch {
                         zonasRepo.updateZona(zona.id, nuevoNombre)
-                        // Actualiza la lista local y notifica al adaptador
                         zona.nombre = nuevoNombre
                         notifyItemChanged(position)
                     }

@@ -1,6 +1,5 @@
-package com.example.proyectofinal.Models
+package com.example.proyectofinal.models
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable

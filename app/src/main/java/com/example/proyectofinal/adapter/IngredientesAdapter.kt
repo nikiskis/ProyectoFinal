@@ -1,5 +1,4 @@
-package com.example.proyectofinal.Adapter // Asegúrate de que el paquete sea correcto
-
+package com.example.proyectofinal.adapter
 import android.graphics.Color
 import android.util.Log
 import android.view.LayoutInflater
@@ -9,7 +8,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal.R
-import com.example.proyectofinal.Models.Ingrediente
+import com.example.proyectofinal.models.Ingrediente
 import java.text.NumberFormat
 import java.util.Locale
 

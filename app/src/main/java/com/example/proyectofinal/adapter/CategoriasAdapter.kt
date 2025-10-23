@@ -1,4 +1,4 @@
-package com.example.proyectofinal.Adapter
+package com.example.proyectofinal.adapter
 
 import android.app.AlertDialog
 import android.content.Context

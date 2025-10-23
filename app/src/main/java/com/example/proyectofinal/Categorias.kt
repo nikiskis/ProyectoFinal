@@ -10,8 +10,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.proyectofinal.Adapter.Categoria
-import com.example.proyectofinal.Adapter.CategoriasAdapter
+import com.example.proyectofinal.adapter.Categoria
+import com.example.proyectofinal.adapter.CategoriasAdapter
 import com.example.proyectofinal.repositories.CategoriasRepository
 import com.example.proyectofinal.network.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest

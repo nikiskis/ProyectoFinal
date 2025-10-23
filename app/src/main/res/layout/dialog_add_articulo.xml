@@ -1,0 +1,29 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/nombreEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre del Artículo" />
+
+    <EditText
+        android:id="@+id/precioEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Precio Establecido"
+        android:inputType="numberDecimal" />
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Estado" android:layout_marginTop="16dp"/>
+    <Spinner android:id="@+id/estadoSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Zona de Producción" android:layout_marginTop="16dp"/>
+    <Spinner android:id="@+id/zonaSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Categoría" android:layout_marginTop="16dp"/>
+    <Spinner android:id="@+id/categoriaSpinner" android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+</LinearLayout>

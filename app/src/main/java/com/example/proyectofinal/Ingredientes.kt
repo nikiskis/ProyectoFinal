@@ -8,18 +8,16 @@ import android.view.LayoutInflater
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.Spinner
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.proyectofinal.Adapter.IngredientesAdapter
-import com.example.proyectofinal.Models.Ingrediente
-import com.example.proyectofinal.Models.IngredienteInsert
-import com.example.proyectofinal.Models.IngredienteUpdate
+import com.example.proyectofinal.adapter.IngredientesAdapter
+import com.example.proyectofinal.models.Ingrediente
+import com.example.proyectofinal.models.IngredienteInsert
+import com.example.proyectofinal.models.IngredienteUpdate
 import com.example.proyectofinal.repositories.IngredientesRepository
 import kotlinx.coroutines.launch
 

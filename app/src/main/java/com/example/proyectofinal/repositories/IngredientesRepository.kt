@@ -1,9 +1,9 @@
 package com.example.proyectofinal.repositories
 
 import android.util.Log
-import com.example.proyectofinal.Models.Ingrediente
-import com.example.proyectofinal.Models.IngredienteInsert
-import com.example.proyectofinal.Models.IngredienteUpdate
+import com.example.proyectofinal.models.Ingrediente
+import com.example.proyectofinal.models.IngredienteInsert
+import com.example.proyectofinal.models.IngredienteUpdate
 import com.example.proyectofinal.network.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -25,7 +25,7 @@ class IngredientesRepository {
 
     suspend fun getIngredientes(): List<Ingrediente> {
         return try {
-            val response = client["Ingrediente"].select(
+            val response = client[tableName].select(
                 columns = Columns.raw("*, estado:Estado(*)")
             )
             response.decodeList<Ingrediente>()
@@ -69,6 +69,21 @@ class IngredientesRepository {
             Log.i("IngredientesRepository", "Ingrediente ID $id actualizado.")
         } catch (e: Exception) {
             Log.e("IngredientesRepository", "Error al actualizar el ingrediente", e)
+        }
+    }
+
+    suspend fun getIngredientesActivos(): List<Ingrediente> {
+        return try {
+
+            val response = client[tableName].select(
+                columns = Columns.raw("*, estado:Estado(*)")
+            ) {
+                filter { eq("id_estado", 1) }
+            }
+            response.decodeList<Ingrediente>()
+        } catch (e: Exception) {
+            Log.e("IngredientesRepository", "Error al obtener ingredientes activos", e)
+            emptyList()
         }
     }
 }
