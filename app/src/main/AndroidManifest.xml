@@ -14,6 +14,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProyectoFinal">
         <activity
+            android:name=".Pagos"
+            android:exported="false" />
+        <activity
+            android:name=".DetallePedido"
+            android:exported="false" />
+        <activity
+            android:name=".Pedido"
+            android:exported="false" />
+        <activity
+            android:name=".Pedidos"
+            android:exported="false" />
+        <activity
             android:name=".GestionarIngredientesActivity"
             android:exported="false" />
         <activity

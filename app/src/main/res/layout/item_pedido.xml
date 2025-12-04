@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardPedido"
+    android:layout_width="match_parent"
+    android:layout_height="120dp"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tvTipoPedido"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MESA"
+            android:textAllCaps="true"
+            android:textSize="14sp"
+            android:textColor="#555555"/>
+
+        <TextView
+            android:id="@+id/tvIdentificador"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1"
+            android:textSize="32sp"
+            android:textStyle="bold"
+            android:textColor="#000000"/>
+
+        <TextView
+            android:id="@+id/tvEstadoPedido"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Activo"
+            android:textSize="12sp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/status_background"
+            android:textColor="#FFFFFF"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"/>
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

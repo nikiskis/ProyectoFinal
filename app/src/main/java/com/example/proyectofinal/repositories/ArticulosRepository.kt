@@ -16,9 +16,8 @@ class ArticulosRepository {
 
     suspend fun getArticulos(): List<Articulo> {
         return try {
-            // Consulta compleja para traer el producto y sus datos relacionados de otras tablas
+
             val response = client[productoTable].select(
-                // Renombramos las relaciones para que coincidan con las data class
                 columns = Columns.raw("*, estado:Estado(*), zona_produccion:Zona_Produccion(*), categoria_producto:Categoria_Producto(*), producto_ingrediente:Producto_Ingrediente(*, ingrediente:Ingrediente(*))")
             )
             response.decodeList<Articulo>()
@@ -30,22 +29,21 @@ class ArticulosRepository {
 
     suspend fun crearArticulo(nuevoArticulo: ArticuloInsert): Int? {
         return try {
-            // Usamos 'select().decodeSingle()' para obtener el objeto recién creado
             val response = client[productoTable].insert(nuevoArticulo) {
                 select()
-            }.decodeSingle<Articulo>() // Asume que la respuesta es un solo artículo
+            }.decodeSingle<Articulo>()
             Log.i("ArticulosRepository", "Artículo '${nuevoArticulo.nombre}' creado con ID ${response.id}.")
-            response.id // Devuelve el ID del nuevo artículo
+            response.id
         } catch (e: Exception) {
             Log.e("ArticulosRepository", "Error al crear el artículo", e)
-            null // Devuelve null si hubo un error
+            null
         }
     }
 
     suspend fun updateArticulo(id: Int, articuloActualizado: ArticuloInsert) {
         try {
             client[productoTable].update(articuloActualizado) {
-                filter { eq("id", id) } // Filtra por el ID del artículo a actualizar
+                filter { eq("id", id) }
             }
             Log.i("ArticulosRepository", "Artículo ID $id actualizado.")
         } catch (e: Exception) {
@@ -56,7 +54,7 @@ class ArticulosRepository {
     suspend fun deleteArticulo(id: Int) {
         try {
             client[productoTable].delete {
-                filter { eq("id", id) } // Filtra por el ID del artículo a eliminar
+                filter { eq("id", id) }
             }
             Log.i("ArticulosRepository", "Artículo ID $id eliminado.")
         } catch (e: Exception) {
@@ -76,7 +74,7 @@ class ArticulosRepository {
     suspend fun removeIngredienteFromArticulo(idRelacion: Int) {
         try {
             client[productoIngredienteTable].delete {
-                filter { eq("id", idRelacion) } // Filtra por el ID de la relación a eliminar
+                filter { eq("id", idRelacion) }
             }
             Log.i("ArticulosRepository", "Relación de ingrediente ID $idRelacion eliminada.")
         } catch (e: Exception) {

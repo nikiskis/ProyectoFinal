@@ -133,7 +133,7 @@ class GestionarIngredientesActivity : AppCompatActivity() {
                     )
                     lifecycleScope.launch {
                         articulosRepo.addIngredienteToArticulo(nuevaRelacion)
-                        loadIngredientesDelArticulo() // Recarga la lista
+                        loadIngredientesDelArticulo()
                     }
                 } else {
                     Toast.makeText(this, "Selecciona un ingrediente e ingresa una cantidad válida", Toast.LENGTH_SHORT).show()
@@ -150,7 +150,7 @@ class GestionarIngredientesActivity : AppCompatActivity() {
             .setPositiveButton("Eliminar") { _, _ ->
                 lifecycleScope.launch {
                     articulosRepo.removeIngredienteFromArticulo(idRelacion)
-                    loadIngredientesDelArticulo() // Recarga la lista
+                    loadIngredientesDelArticulo()
                 }
             }
             .setNegativeButton("Cancelar", null)

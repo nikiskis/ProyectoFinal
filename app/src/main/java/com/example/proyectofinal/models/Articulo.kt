@@ -2,7 +2,6 @@ package com.example.proyectofinal.models
 
 import kotlinx.serialization.Serializable
 
-// Representa la tabla Producto con sus relaciones
 @Serializable
 data class Articulo(
     val id: Int,
@@ -17,15 +16,13 @@ data class Articulo(
     val producto_ingrediente: List<ArticuloIngrediente> = emptyList()
 )
 
-// Representa la tabla de unión Producto_Ingrediente y su ingrediente anidado
 @Serializable
 data class ArticuloIngrediente(
     val id: Int,
     val cantidad: Int,
-    val ingrediente: IngredienteRelacionado // Usamos un nombre diferente para evitar confusión
+    val ingrediente: IngredienteRelacionado
 )
 
-// Data class simplificada para el Ingrediente DENTRO de ArticuloIngrediente
 @Serializable
 data class IngredienteRelacionado(
     val id: Int,

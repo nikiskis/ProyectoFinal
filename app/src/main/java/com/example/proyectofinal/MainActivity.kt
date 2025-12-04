@@ -18,6 +18,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, Articulos::class.java)
             startActivity(intent)
         }
+        val botonPedidos = findViewById<Button>(R.id.btnPedidos)
+        botonPedidos.setOnClickListener {
+            val intent = Intent(this, Pedido::class.java)
+            startActivity(intent)
+        }
     }
 
 
