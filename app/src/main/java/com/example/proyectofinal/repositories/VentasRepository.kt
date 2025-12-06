@@ -93,7 +93,8 @@ class VentasRepository {
 
     suspend fun getDetallesVenta(idVenta: Int): List<DetalleVenta> {
         return try {
-            val response = client[detalleTable].select(columns = Columns.raw("*, producto:Producto(nombre)")) {
+            // CAMBIO AQUÍ: Agregamos 'id_zona_produccion' a la consulta
+            val response = client[detalleTable].select(columns = Columns.raw("*, producto:Producto(nombre, id_zona_produccion)")) {
                 filter { eq("id_venta", idVenta) }
                 order("id", order = Order.ASCENDING)
             }

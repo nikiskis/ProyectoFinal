@@ -4,55 +4,60 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
-import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal.R
 import com.example.proyectofinal.models.Venta
+import com.google.android.material.card.MaterialCardView
 
 class PedidosAdapter(
     private var pedidos: MutableList<Venta>,
-    private val onPedidoClick: (Venta) -> Unit
-) : RecyclerView.Adapter<PedidosAdapter.PedidoViewHolder>() {
+    private val onPedidoClick: (Venta) -> Unit,
+    private val onPrintClick: (Venta) -> Unit // Nuevo parámetro
+) : RecyclerView.Adapter<PedidosAdapter.ViewHolder>() {
 
-    inner class PedidoViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val cardView: CardView = itemView.findViewById(R.id.cardPedido)
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val cardView: MaterialCardView = itemView.findViewById(R.id.cardPedido)
         val tvTipo: TextView = itemView.findViewById(R.id.tvTipoPedido)
-        val tvIdentificador: TextView = itemView.findViewById(R.id.tvIdentificador)
+        val tvId: TextView = itemView.findViewById(R.id.tvIdentificador)
         val tvEstado: TextView = itemView.findViewById(R.id.tvEstadoPedido)
+        val btnPrint: ImageButton = itemView.findViewById(R.id.btnPrintPedido)
+
+        init {
+            itemView.setOnClickListener { onPedidoClick(pedidos[bindingAdapterPosition]) }
+            btnPrint.setOnClickListener { onPrintClick(pedidos[bindingAdapterPosition]) }
+        }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PedidoViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_pedido, parent, false)
-        return PedidoViewHolder(view)
+        return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: PedidoViewHolder, position: Int) {
-        val pedido = pedidos[position]
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = pedidos[position]
+        holder.tvTipo.text = item.tipo_pedido ?: "Pedido"
+        holder.tvId.text = item.identificador ?: "#"
+        holder.tvEstado.text = item.estado?.estado ?: "Activo"
 
-        holder.tvTipo.text = pedido.tipo_pedido
-        holder.tvIdentificador.text = pedido.identificador ?: "#"
-        holder.tvEstado.text = pedido.estado?.estado ?: "Pendiente"
-
-        val colorFondo = when (pedido.tipo_pedido) {
-            "Mesa" -> "#E3F2FD"
-            "Para Llevar" -> "#FFF3E0"
-            "Terraza" -> "#E8F5E9"
-            "Domicilio" -> "#FCE4EC"
-            else -> "#FFFFFF"
+        val colorBorde = when (item.tipo_pedido) {
+            "Mesa" -> Color.parseColor("#2196F3")
+            "Para Llevar" -> Color.parseColor("#FF9800")
+            "Terraza" -> Color.parseColor("#4CAF50")
+            "Domicilio" -> Color.parseColor("#F44336")
+            else -> Color.parseColor("#9E9E9E")
         }
-        holder.cardView.setCardBackgroundColor(Color.parseColor(colorFondo))
 
-        holder.itemView.setOnClickListener {
-            onPedidoClick(pedido)
-        }
+        holder.cardView.strokeColor = colorBorde
+        holder.cardView.setCardBackgroundColor(Color.WHITE)
     }
 
-    override fun getItemCount(): Int = pedidos.size
+    override fun getItemCount() = pedidos.size
 
-    fun updateData(newPedidos: List<Venta>) {
+    fun updateData(newItems: List<Venta>) {
         pedidos.clear()
-        pedidos.addAll(newPedidos)
+        pedidos.addAll(newItems)
         notifyDataSetChanged()
     }
 }

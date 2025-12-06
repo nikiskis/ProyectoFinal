@@ -15,7 +15,8 @@ data class DetalleVenta(
 
 @Serializable
 data class ProductoSimple(
-    val nombre: String
+    val nombre: String,
+    val id_zona_produccion: Int // <--- ¡ESTE CAMPO FALTABA!
 )
 
 @Serializable

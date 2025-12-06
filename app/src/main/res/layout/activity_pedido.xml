@@ -8,14 +8,28 @@
 
     <TextView
         android:id="@+id/tvTituloPedidos"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Pedidos Activos"
         android:textSize="24sp"
         android:textStyle="bold"
         android:gravity="center"
         android:padding="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/btnConfiguracion"
         app:layout_constraintTop_toTopOf="parent"/>
+
+    <ImageButton
+        android:id="@+id/btnConfiguracion"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:src="@android:drawable/ic_menu_preferences"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Configuración"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tvTituloPedidos"
+        app:layout_constraintBottom_toBottomOf="@+id/tvTituloPedidos"/>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/pedidosRecyclerView"
