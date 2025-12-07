@@ -1,8 +1,11 @@
 package com.example.proyectofinal
 
 import android.os.Bundle
+import android.text.InputType
+import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -114,46 +117,96 @@ class DetallePedido : AppCompatActivity() {
             val detalles = ventasRepo.getDetallesVenta(ventaId)
             ticketAdapter.updateData(detalles)
 
-            val total = detalles.sumOf { it.precio_unidad }
+            // Calcula total (cantidad * precio)
+            val total = detalles.sumOf { it.cantidad * it.precio_unidad }
             val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
             tvTotal.text = "Total: ${format.format(total)}"
         }
     }
 
+    // --- AQUÍ ESTABA EL ERROR, YA CORREGIDO ---
     private fun agregarProductoATicket(articulo: Articulo) {
         lifecycleScope.launch {
-            val costoIngredientes = articulo.producto_ingrediente.sumOf {
-                it.ingrediente.costo * it.cantidad
-            }
+            // 1. Obtenemos lo que ya hay en el ticket
+            val detallesActuales = ventasRepo.getDetallesVenta(ventaId)
 
-            val detalle = DetalleVentaInsert(
-                id_venta = ventaId,
-                id_producto = articulo.id,
-                cantidad = 1,
-                precio_unidad = articulo.precio,
-                costo_unidad = costoIngredientes,
-                notas = ""
-            )
-            ventasRepo.agregarDetalle(detalle)
+            // 2. Buscamos si este producto ya existe comparando SOLAMENTE el ID del producto anidado
+            // CORRECCIÓN: Se eliminó "|| it.id_producto == articulo.id" que causaba el error
+            val detalleExistente = detallesActuales.find { it.producto?.id == articulo.id }
+
+            if (detalleExistente != null) {
+                // 3. Si existe, actualizamos la cantidad (+1)
+                val nuevaCantidad = detalleExistente.cantidad + 1
+                ventasRepo.updateCantidadDetalle(detalleExistente.id, nuevaCantidad)
+            } else {
+                // 4. Si no existe, lo creamos como nuevo
+                val costoIngredientes = articulo.producto_ingrediente.sumOf {
+                    it.ingrediente.costo * it.cantidad
+                }
+
+                val detalle = DetalleVentaInsert(
+                    id_venta = ventaId,
+                    id_producto = articulo.id,
+                    cantidad = 1,
+                    precio_unidad = articulo.precio,
+                    costo_unidad = costoIngredientes,
+                    notas = ""
+                )
+                ventasRepo.agregarDetalle(detalle)
+            }
+            // 5. Recargamos la lista visual
             loadTicket()
         }
     }
 
     private fun showEditNotaDialog(detalle: DetalleVenta) {
-        val editText = EditText(this)
-        editText.setText(detalle.notas)
+        val context = this
+        val layout = LinearLayout(context)
+        layout.orientation = LinearLayout.VERTICAL
+        layout.setPadding(50, 40, 50, 10)
 
-        AlertDialog.Builder(this)
-            .setTitle("Notas / Modificaciones")
-            .setView(editText)
+        // Input para Cantidad
+        val tvLabelCant = TextView(context)
+        tvLabelCant.text = "Cantidad:"
+        layout.addView(tvLabelCant)
+
+        val inputCantidad = EditText(context)
+        inputCantidad.inputType = InputType.TYPE_CLASS_NUMBER
+        inputCantidad.setText(detalle.cantidad.toString())
+        inputCantidad.gravity = Gravity.CENTER
+        layout.addView(inputCantidad)
+
+        // Input para Notas
+        val tvLabelNota = TextView(context)
+        tvLabelNota.text = "Notas:"
+        tvLabelNota.setPadding(0, 20, 0, 0)
+        layout.addView(tvLabelNota)
+
+        val inputNota = EditText(context)
+        inputNota.setText(detalle.notas)
+        inputNota.hint = "Sin cebolla, extra salsa..."
+        layout.addView(inputNota)
+
+        AlertDialog.Builder(context)
+            .setTitle(detalle.producto?.nombre ?: "Editar Producto")
+            .setView(layout)
             .setPositiveButton("Guardar") { _, _ ->
-                val nota = editText.text.toString()
+                val nuevaNota = inputNota.text.toString()
+                val nuevaCantidad = inputCantidad.text.toString().toIntOrNull() ?: 0
+
                 lifecycleScope.launch {
-                    ventasRepo.updateNotaDetalle(detalle.id, nota)
+                    if (nuevaCantidad > 0) {
+                        // Actualizamos cantidad y nota
+                        ventasRepo.updateCantidadDetalle(detalle.id, nuevaCantidad)
+                        ventasRepo.updateNotaDetalle(detalle.id, nuevaNota)
+                    } else {
+                        // Si pone 0, se borra
+                        ventasRepo.eliminarDetalle(detalle.id)
+                    }
                     loadTicket()
                 }
             }
-            .setNeutralButton("Eliminar Producto") { _, _ ->
+            .setNeutralButton("Eliminar") { _, _ ->
                 lifecycleScope.launch {
                     ventasRepo.eliminarDetalle(detalle.id)
                     loadTicket()
@@ -206,7 +259,8 @@ class DetallePedido : AppCompatActivity() {
     private fun procederAlPago() {
         lifecycleScope.launch {
             val detalles = ventasRepo.getDetallesVenta(ventaId)
-            val totalActual = detalles.sumOf { it.precio_unidad }
+            // Calculamos el total considerando cantidades
+            val totalActual = detalles.sumOf { it.cantidad * it.precio_unidad }
 
             val intent = android.content.Intent(this@DetallePedido, Pagos::class.java)
             intent.putExtra("EXTRA_VENTA_ID", ventaId)

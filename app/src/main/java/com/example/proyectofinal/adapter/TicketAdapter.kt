@@ -30,12 +30,16 @@ class TicketAdapter(
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = detalles[position]
         val nombre = item.producto?.nombre ?: "Articulo"
-        val notas = if (item.notas.isNullOrBlank()) "" else "(${item.notas})"
+        val notas = if (item.notas.isNullOrBlank()) "" else " (${item.notas})"
 
-        holder.tvNombre.text = "$nombre $notas"
+        // CAMBIO 1: Agregamos la cantidad al inicio (Ej: "3x Hamburguesa")
+        holder.tvNombre.text = "${item.cantidad}x $nombre$notas"
 
         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-        holder.tvPrecio.text = format.format(item.precio_unidad)
+
+        // CAMBIO 2: Multiplicamos por la cantidad para mostrar el total de esa línea
+        val totalLinea = item.precio_unidad * item.cantidad
+        holder.tvPrecio.text = format.format(totalLinea)
 
         holder.btnEdit.setOnClickListener { onEditNotaClick(item) }
     }

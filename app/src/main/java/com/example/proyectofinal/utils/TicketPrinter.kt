@@ -124,7 +124,7 @@ class TicketPrinter(private val context: Context) {
         ticket += "[C]--------------------------------\n" +
                 "[R]TOTAL: <font size='big'>${format.format(total)}</font>\n" +
                 "[C]--------------------------------\n" +
-                "[C]***TICKET NECESARIO PARA LA ENTREGA***\n" +
+                "[C]TICKET NECESARIO PARA LA ENTREGA\n"+
                 "[C]--------------------------------\n" +
                 "[C]SIGUENOS EN FACEBOOK:\n" +
                 "[C]PAGINA DE FACEBOOK\n" +

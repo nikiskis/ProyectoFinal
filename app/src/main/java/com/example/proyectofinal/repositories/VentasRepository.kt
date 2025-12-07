@@ -93,8 +93,8 @@ class VentasRepository {
 
     suspend fun getDetallesVenta(idVenta: Int): List<DetalleVenta> {
         return try {
-            // CAMBIO AQUÍ: Agregamos 'id_zona_produccion' a la consulta
-            val response = client[detalleTable].select(columns = Columns.raw("*, producto:Producto(nombre, id_zona_produccion)")) {
+            // CORRECCIÓN: Agregamos 'id' a la lista de columnas de Producto para poder compararlo
+            val response = client[detalleTable].select(columns = Columns.raw("*, producto:Producto(id, nombre, id_zona_produccion)")) {
                 filter { eq("id_venta", idVenta) }
                 order("id", order = Order.ASCENDING)
             }
@@ -134,6 +134,16 @@ class VentasRepository {
             client[tableName].update(mapOf("id_estado" to 3)) { filter { eq("id", idVenta) } }
         } catch (e: Exception) {
             Log.e("VentasRepo", "Error al marcar pagada: ${e.message}", e)
+        }
+    }
+
+    suspend fun updateCantidadDetalle(idDetalle: Int, nuevaCantidad: Int) {
+        try {
+            client[detalleTable].update(mapOf("cantidad" to nuevaCantidad)) {
+                filter { eq("id", idDetalle) }
+            }
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error al actualizar cantidad: ${e.message}", e)
         }
     }
 }
