@@ -6,13 +6,16 @@ import kotlinx.serialization.Serializable
 data class Articulo(
     val id: Int,
     val nombre: String,
-    val precio: Double,
-    val id_estado: Int,
-    val id_zona_produccion: Int,
-    val id_categoria_producto: Int,
-    val estado: Estado,
-    val zona_produccion: ZonaProduccion,
-    val categoria_producto: CategoriaProducto,
+
+    val precio: Double = 0.0,
+    val id_estado: Int = 0,
+    val id_zona_produccion: Int = 0,
+    val id_categoria_producto: Int = 0,
+
+    val estado: Estado? = null,
+    val zona_produccion: ZonaProduccion? = null,
+    val categoria_producto: CategoriaProducto? = null,
+
     val producto_ingrediente: List<ArticuloIngrediente> = emptyList()
 )
 
@@ -32,10 +35,17 @@ data class IngredienteRelacionado(
 
 
 @Serializable
-data class ZonaProduccion(val id: Int, val nombre: String)
+data class ZonaProduccion(
+    val id: Int,
+    val nombre: String
+)
 
 @Serializable
-data class CategoriaProducto(val id: Int, val nombre: String)
+data class CategoriaProducto(
+    val id: Int,
+    val nombre: String
+)
+
 
 @Serializable
 data class ArticuloInsert(

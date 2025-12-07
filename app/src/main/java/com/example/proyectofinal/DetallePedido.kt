@@ -7,6 +7,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast // Importante
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -29,9 +30,13 @@ class DetallePedido : AppCompatActivity() {
 
     private var ventaId: Int = -1
     private var nombrePedido: String = ""
+    private var direccionPedido: String? = null
+
     private lateinit var rvMenuExpandible: RecyclerView
     private lateinit var rvTicket: RecyclerView
     private lateinit var tvTotal: TextView
+    private lateinit var tvTitulo: TextView
+
     private val categoriasRepo = CategoriasRepository()
     private val articulosRepo = ArticulosRepository()
     private val ventasRepo = VentasRepository()
@@ -46,13 +51,83 @@ class DetallePedido : AppCompatActivity() {
         ventaId = intent.getIntExtra("EXTRA_VENTA_ID", -1)
         nombrePedido = intent.getStringExtra("EXTRA_NOMBRE_PEDIDO") ?: "Pedido"
 
-        val tvTitulo = findViewById<TextView>(R.id.tvTituloMesa)
+        tvTitulo = findViewById(R.id.tvTituloMesa)
         tvTitulo.text = nombrePedido
         tvTotal = findViewById(R.id.tvTotal)
+
+        tvTitulo.setOnClickListener {
+            showEditInfoDialog()
+        }
 
         setupRecyclerViews()
         setupListeners()
         loadData()
+        loadVentaInfo()
+    }
+
+    private fun loadVentaInfo() {
+        lifecycleScope.launch {
+            val venta = ventasRepo.getVentaById(ventaId)
+            if (venta != null) {
+                direccionPedido = venta.direccion
+                // Actualizamos el nombre en memoria por si cambió
+                val tipo = if (venta.tipo_pedido == "Para Llevar") "Llevar" else venta.tipo_pedido ?: ""
+                nombrePedido = "$tipo ${venta.identificador ?: ""}"
+                tvTitulo.text = nombrePedido
+            }
+        }
+    }
+
+    private fun showEditInfoDialog() {
+
+        lifecycleScope.launch {
+            val venta = ventasRepo.getVentaById(ventaId) ?: return@launch
+
+            val context = this@DetallePedido
+            val layout = LinearLayout(context)
+            layout.orientation = LinearLayout.VERTICAL
+            layout.setPadding(50, 40, 50, 10)
+
+            val tvLabelId = TextView(context)
+            tvLabelId.text = "Identificador / Cliente:"
+            layout.addView(tvLabelId)
+
+            val etId = EditText(context)
+            etId.setText(venta.identificador)
+            layout.addView(etId)
+
+            var etDir: EditText? = null
+
+
+            if (venta.tipo_pedido == "Domicilio") {
+                val tvLabelDir = TextView(context)
+                tvLabelDir.text = "Dirección de Entrega:"
+                tvLabelDir.setPadding(0, 20, 0, 0)
+                layout.addView(tvLabelDir)
+
+                etDir = EditText(context)
+                etDir.setText(venta.direccion ?: "")
+                layout.addView(etDir)
+            }
+
+            AlertDialog.Builder(context)
+                .setTitle("Editar Información")
+                .setView(layout)
+                .setPositiveButton("Guardar") { _, _ ->
+                    val nuevoId = etId.text.toString()
+                    val nuevaDir = etDir?.text?.toString()
+
+                    if (nuevoId.isNotBlank()) {
+                        lifecycleScope.launch {
+                            ventasRepo.updateDatosPedido(ventaId, nuevoId, nuevaDir)
+                            loadVentaInfo() // Recargar UI
+                            Toast.makeText(context, "Información actualizada", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
     }
 
     private fun setupRecyclerViews() {
@@ -116,34 +191,24 @@ class DetallePedido : AppCompatActivity() {
         lifecycleScope.launch {
             val detalles = ventasRepo.getDetallesVenta(ventaId)
             ticketAdapter.updateData(detalles)
-
-            // Calcula total (cantidad * precio)
             val total = detalles.sumOf { it.cantidad * it.precio_unidad }
             val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
             tvTotal.text = "Total: ${format.format(total)}"
         }
     }
 
-    // --- AQUÍ ESTABA EL ERROR, YA CORREGIDO ---
     private fun agregarProductoATicket(articulo: Articulo) {
         lifecycleScope.launch {
-            // 1. Obtenemos lo que ya hay en el ticket
             val detallesActuales = ventasRepo.getDetallesVenta(ventaId)
-
-            // 2. Buscamos si este producto ya existe comparando SOLAMENTE el ID del producto anidado
-            // CORRECCIÓN: Se eliminó "|| it.id_producto == articulo.id" que causaba el error
             val detalleExistente = detallesActuales.find { it.producto?.id == articulo.id }
 
             if (detalleExistente != null) {
-                // 3. Si existe, actualizamos la cantidad (+1)
                 val nuevaCantidad = detalleExistente.cantidad + 1
                 ventasRepo.updateCantidadDetalle(detalleExistente.id, nuevaCantidad)
             } else {
-                // 4. Si no existe, lo creamos como nuevo
                 val costoIngredientes = articulo.producto_ingrediente.sumOf {
                     it.ingrediente.costo * it.cantidad
                 }
-
                 val detalle = DetalleVentaInsert(
                     id_venta = ventaId,
                     id_producto = articulo.id,
@@ -154,7 +219,6 @@ class DetallePedido : AppCompatActivity() {
                 )
                 ventasRepo.agregarDetalle(detalle)
             }
-            // 5. Recargamos la lista visual
             loadTicket()
         }
     }
@@ -165,7 +229,6 @@ class DetallePedido : AppCompatActivity() {
         layout.orientation = LinearLayout.VERTICAL
         layout.setPadding(50, 40, 50, 10)
 
-        // Input para Cantidad
         val tvLabelCant = TextView(context)
         tvLabelCant.text = "Cantidad:"
         layout.addView(tvLabelCant)
@@ -176,7 +239,6 @@ class DetallePedido : AppCompatActivity() {
         inputCantidad.gravity = Gravity.CENTER
         layout.addView(inputCantidad)
 
-        // Input para Notas
         val tvLabelNota = TextView(context)
         tvLabelNota.text = "Notas:"
         tvLabelNota.setPadding(0, 20, 0, 0)
@@ -196,11 +258,9 @@ class DetallePedido : AppCompatActivity() {
 
                 lifecycleScope.launch {
                     if (nuevaCantidad > 0) {
-                        // Actualizamos cantidad y nota
                         ventasRepo.updateCantidadDetalle(detalle.id, nuevaCantidad)
                         ventasRepo.updateNotaDetalle(detalle.id, nuevaNota)
                     } else {
-                        // Si pone 0, se borra
                         ventasRepo.eliminarDetalle(detalle.id)
                     }
                     loadTicket()
@@ -218,7 +278,6 @@ class DetallePedido : AppCompatActivity() {
 
     private fun showOpcionesDialog() {
         val opciones = arrayOf("Pagar", "Cancelar Pedido")
-
         AlertDialog.Builder(this)
             .setTitle("Seleccione una acción")
             .setItems(opciones) { _, which ->
@@ -259,9 +318,7 @@ class DetallePedido : AppCompatActivity() {
     private fun procederAlPago() {
         lifecycleScope.launch {
             val detalles = ventasRepo.getDetallesVenta(ventaId)
-            // Calculamos el total considerando cantidades
             val totalActual = detalles.sumOf { it.cantidad * it.precio_unidad }
-
             val intent = android.content.Intent(this@DetallePedido, Pagos::class.java)
             intent.putExtra("EXTRA_VENTA_ID", ventaId)
             intent.putExtra("EXTRA_TOTAL_ORIGINAL", totalActual)

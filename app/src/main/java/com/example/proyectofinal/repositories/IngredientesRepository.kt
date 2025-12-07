@@ -35,22 +35,6 @@ class IngredientesRepository {
         }
     }
 
-    suspend fun updateIngrediente(id: Int, nombre: String, costo: Double, id_estado: Int) {
-        try {
-            val ingredienteActualizado = mapOf(
-                "nombre" to nombre,
-                "costo" to costo,
-                "id_estado" to id_estado
-            )
-            client[tableName].update(ingredienteActualizado) {
-                filter { eq("id", id) }
-            }
-            Log.i("IngredientesRepository", "Ingrediente ID $id actualizado.")
-        } catch (e: Exception) {
-            Log.e("IngredientesRepository", "Error al actualizar el ingrediente", e)
-        }
-    }
-
     suspend fun deleteIngrediente(id: Int) {
         try {
             client[tableName].delete {

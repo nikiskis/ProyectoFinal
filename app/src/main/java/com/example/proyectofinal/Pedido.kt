@@ -1,6 +1,7 @@
 package com.example.proyectofinal
 
 import android.Manifest
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -139,11 +141,35 @@ class Pedido : AppCompatActivity() {
         }
     }
 
+    private fun getDeviceDisplayName(device: BluetoothDevice): String {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                device.alias ?: device.name ?: "Dispositivo sin nombre"
+            } else {
+                device.name ?: "Dispositivo sin nombre"
+            }
+        } else {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                device.name ?: "Dispositivo sin nombre"
+            } else {
+                "Permiso faltante"
+            }
+        }
+    }
+
     private fun showConfiguracionImpresoras() {
         lifecycleScope.launch {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (ContextCompat.checkSelfPermission(this@Pedido, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                    return@launch
+                }
+            }
+
             val zonas = zonasRepo.getZonas()
             val bluetoothDevices = getPairedPrinters()
-            val deviceNames = bluetoothDevices.map { "${it.name} (${it.address})" }
+
+            val deviceNames = bluetoothDevices.map { getDeviceDisplayName(it) }
+
             val spinnerItems = mutableListOf("Ninguna")
             spinnerItems.addAll(deviceNames)
 
@@ -169,7 +195,7 @@ class Pedido : AppCompatActivity() {
         }
     }
 
-    private fun addConfigRow(layout: LinearLayout, spinnersMap: MutableMap<Int, Spinner>, zonaId: Int, titulo: String, spinnerItems: List<String>, bluetoothDevices: List<android.bluetooth.BluetoothDevice>) {
+    private fun addConfigRow(layout: LinearLayout, spinnersMap: MutableMap<Int, Spinner>, zonaId: Int, titulo: String, spinnerItems: List<String>, bluetoothDevices: List<BluetoothDevice>) {
         val tv = TextView(this)
         tv.text = titulo
         tv.textSize = 16f
@@ -180,6 +206,7 @@ class Pedido : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter
         layout.addView(spinner)
+
         val savedMac = printerPrefs.obtenerImpresoraZona(zonaId)
         if (savedMac != null) {
             val index = bluetoothDevices.indexOfFirst { it.address == savedMac }
@@ -188,8 +215,7 @@ class Pedido : AppCompatActivity() {
         spinnersMap[zonaId] = spinner
     }
 
-    private fun savePrinterConfig(spinnersMap: Map<Int, Spinner>, bluetoothDevices: List<android.bluetooth.BluetoothDevice>) {
-        // CORRECCIÓN 1: Usamos 'for' normal para evitar error de inferencia
+    private fun savePrinterConfig(spinnersMap: Map<Int, Spinner>, bluetoothDevices: List<BluetoothDevice>) {
         for (entry in spinnersMap) {
             val zonaId = entry.key
             val spinner = entry.value
@@ -204,10 +230,10 @@ class Pedido : AppCompatActivity() {
         Toast.makeText(this, "Configuración guardada", Toast.LENGTH_SHORT).show()
     }
 
-    private fun getPairedPrinters(): List<android.bluetooth.BluetoothDevice> {
+    private fun getPairedPrinters(): List<BluetoothDevice> {
         val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bluetoothManager.adapter
-        val devices = mutableListOf<android.bluetooth.BluetoothDevice>()
+        val devices = mutableListOf<BluetoothDevice>()
         if (adapter != null && adapter.isEnabled) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
                 devices.addAll(adapter.bondedDevices)
@@ -217,26 +243,34 @@ class Pedido : AppCompatActivity() {
     }
 
     private fun showPrintOptionsDialog(venta: Venta) {
-        val options = arrayOf("Cliente (Ticket de Cobro)", "Preparación (Cocina/Barra)", "Reimpresión (Copia)")
+        val opcionCocina = if (venta.impreso_cocina) {
+            "Reimprimir Cocina (COPIA)"
+        } else {
+            "Preparación (Cocina)"
+        }
+
+        val options = arrayOf(
+            "Ticket Cliente",
+            opcionCocina,
+            "Imprimir Todo (Cocina + Cliente)"
+        )
+
         AlertDialog.Builder(this)
-            .setTitle("Imprimir Ticket - ${venta.tipo_pedido} ${venta.identificador}")
+            .setTitle("Opciones de Impresión")
             .setItems(options) { _, which ->
-                val tipo = when (which) {
-                    0 -> "Cliente"
-                    1 -> "Preparacion"
-                    2 -> "Reimpresion"
-                    else -> ""
+                when (which) {
+                    0 -> executePrint(venta, "Cliente")
+                    1 -> executePrint(venta, "Preparacion")
+                    2 -> executePrint(venta, "Todo")
                 }
-                executePrint(venta, tipo)
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun executePrint(venta: Venta, tipo: String) {
+    private fun executePrint(venta: Venta, tipoAccion: String) {
         lifecycleScope.launch {
             try {
-                // 1. Obtener detalles
                 val detalles = ventasRepo.getDetallesVenta(venta.id)
 
                 if (detalles.isEmpty()) {
@@ -244,12 +278,21 @@ class Pedido : AppCompatActivity() {
                     return@launch
                 }
 
-                if (tipo == "Preparacion") {
-                    // Agrupar por zona
-                    val detallesPorZona = detalles.groupBy { it.producto?.id_zona_produccion }
-                    var impresionesEnviadas = 0
+                var imprimirCocina = false
+                var esReimpresionCocina = false
 
-                    // CORRECCIÓN 2: Usamos 'for' normal para evitar error de inferencia
+                if (tipoAccion == "Preparacion" || tipoAccion == "Todo") {
+                    imprimirCocina = true
+                    if (venta.impreso_cocina) {
+                        esReimpresionCocina = true
+                    }
+                }
+
+                var impresionesCocinaEnviadas = 0
+
+                if (imprimirCocina) {
+                    val detallesPorZona = detalles.groupBy { it.producto?.id_zona_produccion }
+
                     for (entry in detallesPorZona) {
                         val zonaId = entry.key
                         val listaProductos = entry.value
@@ -257,30 +300,37 @@ class Pedido : AppCompatActivity() {
                         if (zonaId != null) {
                             val macZona = printerPrefs.obtenerImpresoraZona(zonaId)
                             if (!macZona.isNullOrEmpty()) {
-                                Toast.makeText(this@Pedido, "Imprimiendo zona ID $zonaId...", Toast.LENGTH_SHORT).show()
-                                ticketPrinter.imprimir(venta, listaProductos, "Preparacion", macZona)
-                                impresionesEnviadas++
-                                delay(2000)
-                            } else {
-                                Log.w("Pedido", "Sin impresora para zona $zonaId")
+                                Toast.makeText(this@Pedido, "Enviando a zona ID $zonaId...", Toast.LENGTH_SHORT).show()
+
+                                ticketPrinter.imprimir(venta, listaProductos, "Preparacion", macZona, esReimpresionCocina)
+
+                                impresionesCocinaEnviadas++
+                                delay(2500)
                             }
                         }
                     }
 
-                    if (impresionesEnviadas == 0) {
-                        Toast.makeText(this@Pedido, "No hay impresoras de zona configuradas", Toast.LENGTH_LONG).show()
+                    if (impresionesCocinaEnviadas > 0 && !venta.impreso_cocina) {
+                        ventasRepo.marcarImpresoCocina(venta.id)
+                        loadPedidos() // Recargar para actualizar estado visual
                     }
+                }
 
-                } else {
-                    // Lógica de Cliente / Caja
+                if (tipoAccion == "Todo" && impresionesCocinaEnviadas > 0) {
+                    delay(1000)
+                }
+
+                if (tipoAccion == "Cliente" || tipoAccion == "Todo") {
                     val macCaja = printerPrefs.obtenerImpresoraCaja()
                     if (!macCaja.isNullOrEmpty()) {
-                        Toast.makeText(this@Pedido, "Imprimiendo Ticket...", Toast.LENGTH_SHORT).show()
-                        ticketPrinter.imprimir(venta, detalles, tipo, macCaja)
+                        Toast.makeText(this@Pedido, "Imprimiendo Ticket Cliente...", Toast.LENGTH_SHORT).show()
+                        // Cliente siempre false en 'esReimpresion' para la lógica de TicketPrinter
+                        ticketPrinter.imprimir(venta, detalles, "Cliente", macCaja, false)
                     } else {
                         Toast.makeText(this@Pedido, "Configura impresora de Caja", Toast.LENGTH_LONG).show()
                     }
                 }
+
             } catch (e: Exception) {
                 Log.e("Pedido", "Error impresión", e)
                 Toast.makeText(this@Pedido, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -292,26 +342,60 @@ class Pedido : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_pedido, null)
         val spinnerTipo = dialogView.findViewById<Spinner>(R.id.spinnerTipoPedido)
         val etIdentificador = dialogView.findViewById<EditText>(R.id.etIdentificador)
+
+        val etDireccion = dialogView.findViewById<EditText>(R.id.etDireccion)
+        val tvLabelDireccion = dialogView.findViewById<TextView>(R.id.tvLabelDireccion)
+
+        etDireccion.visibility = View.GONE
+        tvLabelDireccion.visibility = View.GONE
+
         val tipos = listOf("Mesa", "Para Llevar", "Terraza", "Domicilio")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, tipos)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerTipo.adapter = adapter
+
+        spinnerTipo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val seleccionado = tipos[position]
+                if (seleccionado == "Domicilio") {
+                    etDireccion.visibility = View.VISIBLE
+                    tvLabelDireccion.visibility = View.VISIBLE
+                    etIdentificador.hint = "Nombre del Cliente / Teléfono"
+                } else {
+                    etDireccion.visibility = View.GONE
+                    tvLabelDireccion.visibility = View.GONE
+                    etIdentificador.hint = "Identificador (ej. 1, 5, A)"
+                }
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
         AlertDialog.Builder(this)
             .setTitle("Nuevo Pedido")
             .setView(dialogView)
             .setPositiveButton("Crear") { _, _ ->
                 val tipo = spinnerTipo.selectedItem.toString()
                 val identificador = etIdentificador.text.toString()
-                if (identificador.isNotBlank()) createPedido(tipo, identificador)
+                val direccion = if (tipo == "Domicilio") etDireccion.text.toString() else null
+
+                if (identificador.isNotBlank()) {
+                    createPedido(tipo, identificador, direccion)
+                }
             }
             .setNegativeButton("Cancelar", null)
             .show()
     }
 
-    private fun createPedido(tipo: String, identificador: String) {
+    private fun createPedido(tipo: String, identificador: String, direccion: String?) {
         lifecycleScope.launch {
             val fechaActual = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val nuevaVenta = VentaInsert(fecha = fechaActual, id_estado = 1, tipo_pedido = tipo, identificador = identificador)
+            val nuevaVenta = VentaInsert(
+                fecha = fechaActual,
+                id_estado = 1,
+                tipo_pedido = tipo,
+                identificador = identificador,
+                direccion = direccion
+            )
             ventasRepo.crearVenta(nuevaVenta)
             loadPedidos()
         }

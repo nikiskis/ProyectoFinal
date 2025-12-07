@@ -22,7 +22,7 @@ import java.util.Locale
 
 class TicketPrinter(private val context: Context) {
 
-    fun imprimir(venta: Venta, detalles: List<DetalleVenta>, tipoTicket: String, macAddress: String?) {
+    fun imprimir(venta: Venta, detalles: List<DetalleVenta>, tipoTicket: String, macAddress: String?, esReimpresion: Boolean = false) {
         if (macAddress.isNullOrEmpty()) {
             Toast.makeText(context, "No hay impresora configurada", Toast.LENGTH_SHORT).show()
             return
@@ -38,12 +38,11 @@ class TicketPrinter(private val context: Context) {
             val device = bluetoothAdapter.getRemoteDevice(macAddress)
             val connection = BluetoothConnection(device)
 
-            // 32 es el ancho de caracteres configurado
             val printer = EscPosPrinter(connection, 203, 48f, 32)
 
             val texto = when (tipoTicket) {
                 "Cliente" -> generarTicketCliente(printer, venta, detalles)
-                "Preparacion" -> generarTicketCocina(venta, detalles)
+                "Preparacion" -> generarTicketCocina(venta, detalles, esReimpresion)
                 "Reimpresion" -> generarTicketCliente(printer, venta, detalles)
                 else -> ""
             }
@@ -76,14 +75,12 @@ class TicketPrinter(private val context: Context) {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         val now = Date()
-        val total = detalles.sumOf { it.precio_unidad }
+        val total = detalles.sumOf { it.precio_unidad * it.cantidad }
 
-        // El ancho configurado en EscPosPrinter es 32
         val maxAnchoLinea = 32
-
         var ticket = ""
 
-        // --- LOGO ---
+        // LOGO
         try {
             val logoBitmap = getBitmapFromVectorDrawable(context, R.mipmap.ic_launcher)
             if (logoBitmap != null) {
@@ -92,35 +89,37 @@ class TicketPrinter(private val context: Context) {
             }
         } catch (e: Exception) {}
 
-        // --- ENCABEZADO ---
-        ticket += "[C]<u><font size='big'>RESTAURANTE</font></u>\n" +
+        // ENCABEZADO
+        ticket += "[C]<u><font size='big'>MUNDO GRILL</font></u>\n" +
                 "[C]POR QUE MERECES COMER BIEN\n" +
                 "[C]--------------------------------\n" +
-                "[C]CALLE EJEMPLO #123, COL. CENTRO\n" + // CAMBIAR DIRECCION
-                "[C]--------------------------------\n" +
-                "[C]<b>TEL: 55-0000-0000</b>\n" +       // CAMBIAR TELEFONO
-                "[C]--------------------------------\n" +
                 "[L]<b>FECHA: ${dateFormat.format(now)}</b>\n" +
-                "[L]<b>HORA: ${timeFormat.format(now)}</b>\n" +
+                "[L]<b>HORA: ${timeFormat.format(now)}</b>\n"
+
+        // DIRECCIÓN (SOLO SI ES DOMICILIO)
+        if (venta.tipo_pedido == "Domicilio" && !venta.direccion.isNullOrBlank()) {
+            ticket += "[L]<b>ENTREGA:</b>\n" +
+                    "[L]${venta.direccion}\n"
+        }
+
+        // CLIENTE / IDENTIFICADOR
+        ticket += "[L]NUM: ${venta.identificador}\n" +
                 "[C]--------------------------------\n"
 
-        // --- PRODUCTOS ---
+        // PRODUCTOS
         detalles.forEach {
             val nombre = it.producto?.nombre ?: "Articulo"
-            val precio = format.format(it.precio_unidad)
+            val precio = format.format(it.precio_unidad * it.cantidad)
             val textoProducto = "${it.cantidad}x $nombre"
 
-            // Calculamos si texto + precio exceden el ancho (dejando 1 espacio de margen)
             if ((textoProducto.length + precio.length + 1) > maxAnchoLinea) {
-                // Si es muy largo, bajamos el precio a la siguiente linea alineado a la derecha
                 ticket += "[L]$textoProducto\n[R]$precio\n"
             } else {
-                // Si cabe, mantenemos el formato original en una sola linea
                 ticket += "[L]$textoProducto[R]$precio\n"
             }
         }
 
-        // --- TOTALES Y PIE DE PAGINA ---
+        // TOTALES Y PIE DE PAGINA
         ticket += "[C]--------------------------------\n" +
                 "[R]TOTAL: <font size='big'>${format.format(total)}</font>\n" +
                 "[C]--------------------------------\n" +
@@ -135,25 +134,34 @@ class TicketPrinter(private val context: Context) {
 
         return ticket
     }
-
-    private fun generarTicketCocina(venta: Venta, detalles: List<DetalleVenta>): String {
+    private fun generarTicketCocina(venta: Venta, detalles: List<DetalleVenta>, esReimpresion: Boolean): String {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         val now = Date()
 
-        var ticket = "[C]<b><font size='big'>RESTAURANTE</font></b>\n" +
-                "[L]<b>Mesa:</b> ${venta.identificador}\n" +
+        var ticket = ""
+
+        if (esReimpresion) {
+            ticket += "[C]<b><font size='big'>REIMPRESION</font></b>\n"
+        }
+        // -------------------------------
+
+        ticket += "[C]<b><font size='big'>MUNDO GRILL</font></b>\n" +
+                "[L]<b>Tipo:</b> ${venta.tipo_pedido}\n" +
+                "[L]<b>Id:</b> ${venta.identificador}\n" +
                 "[L]<b>Fecha:</b> ${dateFormat.format(now)}\n" +
-                "[L]<b>Hora:</b> ${timeFormat.format(now)}\n" +
-                "[L]<b>Zona:</b> ${venta.tipo_pedido}\n" +
-                "[C]--------------------------------\n" +
+                "[L]<b>Hora:</b> ${timeFormat.format(now)}\n"
+
+        if (venta.tipo_pedido == "Domicilio" && !venta.direccion.isNullOrBlank()) {
+            ticket += "[L]<b>DIR:</b> ${venta.direccion}\n"
+        }
+
+        ticket += "[C]--------------------------------\n" +
                 "[C]--------------------------------\n"
 
         detalles.forEach {
             val nombre = it.producto?.nombre ?: "Articulo"
-
             ticket += "[L][] <b>${it.cantidad}</b> $nombre\n"
-
             if (!it.notas.isNullOrBlank()) {
                 ticket += "[L]   (Nota: ${it.notas})\n"
             }

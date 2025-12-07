@@ -23,7 +23,7 @@ class VentasRepository {
     suspend fun getVentasActivas(): List<Venta> {
         return try {
             val response = client[tableName].select(
-                columns = Columns.raw("*, estado:Estado(*)")
+                columns = Columns.raw("*, estado:Estado(*), Detalle_Venta(id)")
             ) {
                 filter { eq("id_estado", 1) }
                 order("fecha", order = Order.DESCENDING)
@@ -35,13 +35,38 @@ class VentasRepository {
         }
     }
 
+    suspend fun getVentaById(id: Int): Venta? {
+        return try {
+            client[tableName].select {
+                filter { eq("id", id) }
+            }.decodeSingleOrNull<Venta>()
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error al obtener venta por ID", e)
+            null
+        }
+    }
+
     suspend fun crearVenta(nuevaVenta: VentaInsert) {
         try {
             client[tableName].insert(nuevaVenta)
             Log.i("VentasRepo", "Venta creada exitosamente")
         } catch (e: Exception) {
             Log.e("VentasRepo", "Error CRÍTICO al crear venta: ${e.message}", e)
-            throw e // Relanzamos para que la UI se entere si es necesario
+            throw e
+        }
+    }
+
+    suspend fun updateDatosPedido(idVenta: Int, identificador: String, direccion: String?) {
+        try {
+            val updateMap = mutableMapOf<String, String?>("identificador" to identificador)
+            if (direccion != null) {
+                updateMap["direccion"] = direccion
+            }
+            client[tableName].update(updateMap) {
+                filter { eq("id", idVenta) }
+            }
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error actualizando datos pedido", e)
         }
     }
 
@@ -63,18 +88,10 @@ class VentasRepository {
                 put("id_metodo_propina", idMetodoPropina)
                 put("id_estado", 3)
             }
-
-            Log.d("VentasRepo", "Intentando actualizar venta ID: $idVenta con datos: $datosVenta")
-
-            client[tableName].update(datosVenta) {
-                filter { eq("id", idVenta) }
-            }
-
+            client[tableName].update(datosVenta) { filter { eq("id", idVenta) } }
             if (pagos.isNotEmpty()) {
-                Log.d("VentasRepo", "Insertando pagos: $pagos")
                 client[pagosTable].insert(pagos)
             }
-
         } catch (e: Exception) {
             Log.e("VentasRepo", "Error CRÍTICO al finalizar venta: ${e.message}", e)
             throw e
@@ -83,67 +100,51 @@ class VentasRepository {
 
     suspend fun cancelarVenta(idVenta: Int) {
         try {
-            client[tableName].update(mapOf("id_estado" to 4)) {
-                filter { eq("id", idVenta) }
-            }
-        } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al cancelar venta: ${e.message}", e)
-        }
+            client[tableName].update(mapOf("id_estado" to 4)) { filter { eq("id", idVenta) } }
+        } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 
     suspend fun getDetallesVenta(idVenta: Int): List<DetalleVenta> {
         return try {
-            // CORRECCIÓN: Agregamos 'id' a la lista de columnas de Producto para poder compararlo
             val response = client[detalleTable].select(columns = Columns.raw("*, producto:Producto(id, nombre, id_zona_produccion)")) {
                 filter { eq("id_venta", idVenta) }
                 order("id", order = Order.ASCENDING)
             }
             response.decodeList<DetalleVenta>()
         } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al obtener detalles: ${e.message}", e)
+            Log.e("VentasRepo", "Error", e)
             emptyList()
         }
     }
 
-    suspend fun agregarDetalle(detalle: DetalleVentaInsert) {
+    suspend fun marcarImpresoCocina(idVenta: Int) {
         try {
-            client[detalleTable].insert(detalle)
+            client[tableName].update(mapOf("impreso_cocina" to true)) {
+                filter { eq("id", idVenta) }
+            }
+            Log.i("VentasRepo", "Venta $idVenta marcada como impresa en cocina.")
         } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al agregar detalle: ${e.message}", e)
+            Log.e("VentasRepo", "Error al marcar impreso cocina", e)
         }
+    }
+
+    suspend fun agregarDetalle(detalle: DetalleVentaInsert) {
+        try { client[detalleTable].insert(detalle) } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 
     suspend fun updateNotaDetalle(idDetalle: Int, nota: String) {
-        try {
-            client[detalleTable].update(mapOf("notas" to nota)) { filter { eq("id", idDetalle) } }
-        } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al actualizar nota: ${e.message}", e)
-        }
+        try { client[detalleTable].update(mapOf("notas" to nota)) { filter { eq("id", idDetalle) } } } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 
     suspend fun eliminarDetalle(idDetalle: Int) {
-        try {
-            client[detalleTable].delete { filter { eq("id", idDetalle) } }
-        } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al eliminar detalle: ${e.message}", e)
-        }
+        try { client[detalleTable].delete { filter { eq("id", idDetalle) } } } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 
     suspend fun marcarVentaPagada(idVenta: Int) {
-        try {
-            client[tableName].update(mapOf("id_estado" to 3)) { filter { eq("id", idVenta) } }
-        } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al marcar pagada: ${e.message}", e)
-        }
+        try { client[tableName].update(mapOf("id_estado" to 3)) { filter { eq("id", idVenta) } } } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 
     suspend fun updateCantidadDetalle(idDetalle: Int, nuevaCantidad: Int) {
-        try {
-            client[detalleTable].update(mapOf("cantidad" to nuevaCantidad)) {
-                filter { eq("id", idDetalle) }
-            }
-        } catch (e: Exception) {
-            Log.e("VentasRepo", "Error al actualizar cantidad: ${e.message}", e)
-        }
+        try { client[detalleTable].update(mapOf("cantidad" to nuevaCantidad)) { filter { eq("id", idDetalle) } } } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 }

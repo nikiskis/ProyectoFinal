@@ -14,12 +14,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.proyectofinal.adapter.ArticulosAdapter
+import com.example.proyectofinal.adapter.AdminExpandibleAdapter
 import com.example.proyectofinal.models.Articulo
 import com.example.proyectofinal.models.ArticuloInsert
-import com.example.proyectofinal.models.CategoriaProducto
+import com.example.proyectofinal.models.CategoriaExpandible
 import com.example.proyectofinal.models.Estado
-import com.example.proyectofinal.models.ZonaProduccion
 import com.example.proyectofinal.repositories.ArticulosRepository
 import com.example.proyectofinal.repositories.CategoriasRepository
 import com.example.proyectofinal.repositories.ZonasRepository
@@ -28,7 +27,7 @@ import kotlinx.coroutines.launch
 class Articulos : AppCompatActivity() {
 
     private lateinit var articulosRecyclerView: RecyclerView
-    private lateinit var articulosAdapter: ArticulosAdapter
+    private lateinit var adminAdapter: AdminExpandibleAdapter
 
     private val articulosRepo = ArticulosRepository()
     private val zonasRepo = ZonasRepository()
@@ -45,19 +44,20 @@ class Articulos : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         articulosRecyclerView = findViewById(R.id.articulosRecyclerView)
-        articulosAdapter = ArticulosAdapter(
-            mutableListOf(),
+
+        adminAdapter = AdminExpandibleAdapter(
+            emptyList(),
             onEditClick = { articulo -> showAddOrEditArticuloDialog(articulo) },
             onDeleteClick = { articulo -> showDeleteConfirmationDialog(articulo) },
             onIngredientsClick = { articulo ->
-
                 val intent = Intent(this, GestionarIngredientesActivity::class.java)
                 intent.putExtra(GestionarIngredientesActivity.EXTRA_ARTICULO_ID, articulo.id)
                 intent.putExtra(GestionarIngredientesActivity.EXTRA_ARTICULO_NOMBRE, articulo.nombre)
                 startActivity(intent)
             }
         )
-        articulosRecyclerView.adapter = articulosAdapter
+
+        articulosRecyclerView.adapter = adminAdapter
         articulosRecyclerView.layoutManager = LinearLayoutManager(this)
     }
 
@@ -65,7 +65,32 @@ class Articulos : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val articulosFromDB = articulosRepo.getArticulos()
-                articulosAdapter.updateData(articulosFromDB)
+                val categoriasFromDB = categoriasRepo.getCategorias()
+
+                val listaExpandible = ArrayList<CategoriaExpandible>()
+
+                for (cat in categoriasFromDB) {
+                    val productosDeCategoria = articulosFromDB.filter {
+                        it.id_categoria_producto == cat.id
+                    }
+
+                    if (productosDeCategoria.isNotEmpty()) {
+                        val productosOrdenados = productosDeCategoria.sortedWith(
+                            compareBy<Articulo> { it.id_estado }.thenBy { it.nombre }
+                        )
+
+                        listaExpandible.add(
+                            CategoriaExpandible(
+                                categoria = cat,
+                                productos = productosOrdenados,
+                                isExpanded = false
+                            )
+                        )
+                    }
+                }
+
+                adminAdapter.updateData(listaExpandible)
+
             } catch (e: Exception) {
                 Log.e("ArticulosActivity", "Error al cargar artículos", e)
             }
@@ -90,14 +115,12 @@ class Articulos : AppCompatActivity() {
         findViewById<Button>(R.id.btnRegresar).setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
-
         }
 
         findViewById<Button>(R.id.btnIngredientes).setOnClickListener {
             val intent = Intent(this, Ingredientes::class.java)
             startActivity(intent)
         }
-
     }
 
     private fun showAddOrEditArticuloDialog(articulo: Articulo?) {

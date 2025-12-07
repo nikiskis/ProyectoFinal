@@ -32,12 +32,10 @@ class TicketAdapter(
         val nombre = item.producto?.nombre ?: "Articulo"
         val notas = if (item.notas.isNullOrBlank()) "" else " (${item.notas})"
 
-        // CAMBIO 1: Agregamos la cantidad al inicio (Ej: "3x Hamburguesa")
         holder.tvNombre.text = "${item.cantidad}x $nombre$notas"
 
         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
 
-        // CAMBIO 2: Multiplicamos por la cantidad para mostrar el total de esa línea
         val totalLinea = item.precio_unidad * item.cantidad
         holder.tvPrecio.text = format.format(totalLinea)
 

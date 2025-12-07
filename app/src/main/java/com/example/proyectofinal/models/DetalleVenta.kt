@@ -5,19 +5,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DetalleVenta(
     val id: Int,
-    val id_venta: Int,
-    val id_producto: Int, // Este es el ID foráneo, pero a veces necesitamos el del objeto anidado
-    var cantidad: Int,    // CAMBIO: 'var' para poder editar la cantidad en memoria si es necesario
-    val precio_unidad: Double,
+    val id_venta: Int = 0,
+    val id_producto: Int = 0,
+    val cantidad: Int = 0,
+    val precio_unidad: Double = 0.0,
+    val costo_unidad: Double = 0.0,
     val notas: String? = null,
-    val producto: ProductoSimple? = null
-)
-
-@Serializable
-data class ProductoSimple(
-    val id: Int,          // <--- ¡AQUÍ ESTABA EL ERROR! Faltaba este campo.
-    val nombre: String,
-    val id_zona_produccion: Int? = null // Puede ser nulo si la DB no lo trae siempre
+    val producto: Articulo? = null
 )
 
 @Serializable

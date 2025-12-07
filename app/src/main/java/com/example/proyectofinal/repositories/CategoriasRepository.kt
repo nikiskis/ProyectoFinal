@@ -24,7 +24,7 @@ class CategoriasRepository {
     suspend fun crearCategoria(nombre: String) {
         try {
             val nuevaCategoria = mapOf("nombre" to nombre)
-            client[tableName].insert(nuevaCategoria) // Usa tableName
+            client[tableName].insert(nuevaCategoria)
             Log.i("CategoriasRepository", "Categoria '$nombre' creada exitosamente.")
         } catch (e: Exception) {
             Log.e("CategoriasRepository", "Error al crear la categoria", e)

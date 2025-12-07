@@ -5,7 +5,7 @@ import com.example.proyectofinal.models.Articulo
 import com.example.proyectofinal.models.ArticuloInsert
 import com.example.proyectofinal.models.ArticuloIngredienteInsert
 import com.example.proyectofinal.network.SupabaseClient
-import io.github.jan.supabase.postgrest.postgrest // Assuming you still use this library
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 
 class ArticulosRepository {
@@ -16,10 +16,11 @@ class ArticulosRepository {
 
     suspend fun getArticulos(): List<Articulo> {
         return try {
-
             val response = client[productoTable].select(
                 columns = Columns.raw("*, estado:Estado(*), zona_produccion:Zona_Produccion(*), categoria_producto:Categoria_Producto(*), producto_ingrediente:Producto_Ingrediente(*, ingrediente:Ingrediente(*))")
-            )
+            ) {
+                filter { neq("id_estado", 5) }
+            }
             response.decodeList<Articulo>()
         } catch (e: Exception) {
             Log.e("ArticulosRepository", "Error al obtener artículos", e)
@@ -53,12 +54,13 @@ class ArticulosRepository {
 
     suspend fun deleteArticulo(id: Int) {
         try {
-            client[productoTable].delete {
+            client[productoTable].update(mapOf("id_estado" to 5)) {
                 filter { eq("id", id) }
             }
-            Log.i("ArticulosRepository", "Artículo ID $id eliminado.")
+            Log.i("ArticulosRepository", "Artículo ID $id marcado como eliminado (estado 5).")
         } catch (e: Exception) {
             Log.e("ArticulosRepository", "Error al eliminar el artículo", e)
+            throw e
         }
     }
 

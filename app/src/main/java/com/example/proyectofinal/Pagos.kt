@@ -27,8 +27,6 @@ class Pagos : AppCompatActivity() {
     private var descuentoMonto: Double = 0.0
     private var descuentoPorcentaje: Int = 0
     private var totalFinal: Double = 0.0
-
-    // Vistas
     private lateinit var tvSubtotal: TextView
     private lateinit var tvDescuento: TextView
     private lateinit var tvTotalFinal: TextView

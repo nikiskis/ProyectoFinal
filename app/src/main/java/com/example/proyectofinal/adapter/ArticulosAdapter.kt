@@ -1,6 +1,6 @@
 package com.example.proyectofinal.adapter
 
-
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -27,6 +27,7 @@ class ArticulosAdapter(
         val ingredientsButton: ImageButton = itemView.findViewById(R.id.ingredientsButton)
         val editButton: ImageButton = itemView.findViewById(R.id.editButton)
         val deleteButton: ImageButton = itemView.findViewById(R.id.deleteButton)
+        val rootLayout: View = itemView.findViewById(R.id.main) ?: itemView
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ArticuloViewHolder {
@@ -41,7 +42,6 @@ class ArticulosAdapter(
         holder.nameTextView.text = articulo.nombre
 
         val currencyFormat: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-
         holder.precioTextView.text = "Precio: ${currencyFormat.format(articulo.precio)}"
 
         val costoTotal = articulo.producto_ingrediente.sumOf {
@@ -52,15 +52,18 @@ class ArticulosAdapter(
         val precioSugerido = costoTotal * 3.0
         holder.precioSugeridoTextView.text = "Sugerido: ${currencyFormat.format(precioSugerido)}"
 
-        holder.ingredientsButton.setOnClickListener {
-            onIngredientsClick(articulo)
+        if (articulo.id_estado == 2) {
+            holder.itemView.alpha = 0.6f
+            holder.rootLayout.setBackgroundColor(Color.parseColor("#E0E0E0"))
+            holder.nameTextView.text = "${articulo.nombre} (Inactivo)"
+        } else {
+            holder.itemView.alpha = 1.0f
+            holder.rootLayout.setBackgroundResource(R.drawable.item_background)
         }
-        holder.editButton.setOnClickListener {
-            onEditClick(articulo)
-        }
-        holder.deleteButton.setOnClickListener {
-            onDeleteClick(articulo)
-        }
+
+        holder.ingredientsButton.setOnClickListener { onIngredientsClick(articulo) }
+        holder.editButton.setOnClickListener { onEditClick(articulo) }
+        holder.deleteButton.setOnClickListener { onDeleteClick(articulo) }
     }
 
     override fun getItemCount(): Int = articulos.size
