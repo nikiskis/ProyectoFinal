@@ -127,6 +127,45 @@ class VentasRepository {
             Log.e("VentasRepo", "Error al marcar impreso cocina", e)
         }
     }
+    suspend fun updateDescuentoVenta(idVenta: Int, monto: Double, porcentaje: Int) {
+        try {
+            val updateData = buildJsonObject {
+                put("descuento_monto", monto)
+                put("descuento_porcentaje", porcentaje)
+            }
+
+            client[tableName].update(updateData) {
+                filter { eq("id", idVenta) }
+            }
+            Log.i("VentasRepo", "Descuento actualizado para venta $idVenta")
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error al actualizar descuento", e)
+            throw e
+        }
+    }
+
+    suspend fun getVentasPorRango(fechaInicio: String, fechaFin: String): List<Venta> {
+        return try {
+            val response = client[tableName].select(
+                columns = Columns.raw(
+                    "*, " +
+                            "estado:Estado(*), " +
+                            "Venta_Pago(*), " +
+                            "Detalle_Venta(*, producto:Producto(id, nombre, id_zona_produccion))"
+                )
+            ) {
+                filter {
+                    gte("fecha", fechaInicio)
+                    lte("fecha", fechaFin)
+                }
+                order("fecha", order = Order.DESCENDING)
+            }
+            response.decodeList<Venta>()
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error reporte corte: ${e.message}", e)
+            emptyList()
+        }
+    }
 
     suspend fun agregarDetalle(detalle: DetalleVentaInsert) {
         try { client[detalleTable].insert(detalle) } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }

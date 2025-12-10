@@ -1,21 +1,31 @@
 package com.example.proyectofinal
 
-import android.content.Intent
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.example.proyectofinal.models.DetalleVenta
+import com.example.proyectofinal.models.Venta
 import com.example.proyectofinal.models.VentaPagoInsert
 import com.example.proyectofinal.repositories.VentasRepository
+import com.example.proyectofinal.utils.PrinterPreferences
+import com.example.proyectofinal.utils.TicketPrinter
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
@@ -23,7 +33,7 @@ import java.util.Locale
 class Pagos : AppCompatActivity() {
 
     private var ventaId: Int = -1
-    private var totalOriginal: Double = 0.0
+    private var subtotalOriginal: Double = 0.0
     private var descuentoMonto: Double = 0.0
     private var descuentoPorcentaje: Int = 0
     private var totalFinal: Double = 0.0
@@ -36,19 +46,31 @@ class Pagos : AppCompatActivity() {
     private lateinit var etPagoTarjeta: EditText
     private lateinit var tvRestante: TextView
     private lateinit var btnCobrar: Button
+    private lateinit var btnAplicarDescuento: Button
 
     private val ventasRepo = VentasRepository()
+    private lateinit var ticketPrinter: TicketPrinter
+    private lateinit var printerPrefs: PrinterPreferences
+
+    private var ventaActual: Venta? = null
+    private var detallesActuales: List<DetalleVenta> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pagos)
 
         ventaId = intent.getIntExtra("EXTRA_VENTA_ID", -1)
-        totalOriginal = intent.getDoubleExtra("EXTRA_TOTAL_ORIGINAL", 0.0)
+        subtotalOriginal = intent.getDoubleExtra("EXTRA_TOTAL_ORIGINAL", 0.0)
+        totalFinal = subtotalOriginal
+
+        ticketPrinter = TicketPrinter(this)
+        printerPrefs = PrinterPreferences(this)
 
         initViews()
-        calcularTotales()
         setupListeners()
+        updateUI()
+
+        loadVentaData()
     }
 
     private fun initViews() {
@@ -61,29 +83,150 @@ class Pagos : AppCompatActivity() {
         etPagoTarjeta = findViewById(R.id.etPagoTarjeta)
         tvRestante = findViewById(R.id.tvRestante)
         btnCobrar = findViewById(R.id.btnCobrar)
+        btnAplicarDescuento = findViewById(R.id.btnAplicarDescuento)
+    }
+
+    private fun loadVentaData() {
+        lifecycleScope.launch {
+            ventaActual = ventasRepo.getVentaById(ventaId)
+            detallesActuales = ventasRepo.getDetallesVenta(ventaId)
+
+            if (ventaActual != null) {
+                descuentoMonto = ventaActual?.descuento_monto ?: 0.0
+                descuentoPorcentaje = ventaActual?.descuento_porcentaje ?: 0
+                recalcularTotal()
+            }
+        }
     }
 
     private fun setupListeners() {
-        findViewById<Button>(R.id.btnAplicarDescuento).setOnClickListener {
+        btnAplicarDescuento.setOnClickListener {
             showPasswordDialog()
         }
 
         val textWatcher = object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) = validarMontosPago()
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                calcularRestante()
+            }
         }
+
         etPagoEfectivo.addTextChangedListener(textWatcher)
         etPagoTarjeta.addTextChangedListener(textWatcher)
 
         btnCobrar.setOnClickListener {
-            procesarCobro()
+            finalizarVenta()
         }
     }
 
-    private fun validarMontosPago() {
+    private fun showPasswordDialog() {
+        val input = EditText(this)
+        input.hint = "Contraseña Administrativa"
+        input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        input.gravity = Gravity.CENTER
+
+        AlertDialog.Builder(this)
+            .setTitle("Autorización Requerida")
+            .setMessage("Ingrese contraseña para aplicar descuento:")
+            .setView(input)
+            .setPositiveButton("Aceptar") { dialog, _ ->
+                val password = input.text.toString()
+                if (password == "1234") { // Contraseña quemada, igual que en cancelación
+                    showDescuentoDialog()
+                } else {
+                    Toast.makeText(this, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
+                    dialog.dismiss()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun showDescuentoDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_descuento, null)
+        val etMonto = dialogView.findViewById<EditText>(R.id.etDescuentoMonto)
+        val etPorcentaje = dialogView.findViewById<EditText>(R.id.etDescuentoPorcentaje)
+
+        AlertDialog.Builder(this)
+            .setTitle("Aplicar Descuento")
+            .setView(dialogView)
+            .setPositiveButton("Aplicar") { _, _ ->
+                val montoStr = etMonto.text.toString()
+                val porcStr = etPorcentaje.text.toString()
+
+                if (porcStr.isNotEmpty()) {
+                    val porcentaje = porcStr.toIntOrNull() ?: 0
+                    descuentoPorcentaje = porcentaje
+                    descuentoMonto = subtotalOriginal * (porcentaje / 100.0)
+                } else if (montoStr.isNotEmpty()) {
+                    descuentoMonto = montoStr.toDoubleOrNull() ?: 0.0
+                    descuentoPorcentaje = 0
+                } else {
+                    descuentoMonto = 0.0
+                    descuentoPorcentaje = 0
+                }
+
+                guardarYImprimirDescuento()
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun guardarYImprimirDescuento() {
+        lifecycleScope.launch {
+            try {
+                ventasRepo.updateDescuentoVenta(ventaId, descuentoMonto, descuentoPorcentaje)
+
+                recalcularTotal()
+                ventaActual = ventasRepo.getVentaById(ventaId)
+
+                checkAndPrintTicket()
+
+                Toast.makeText(this@Pagos, "Descuento aplicado e imprimiendo...", Toast.LENGTH_SHORT).show()
+
+            } catch (e: Exception) {
+                Toast.makeText(this@Pagos, "Error al guardar descuento: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun checkAndPrintTicket() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 101)
+                return
+            }
+        }
+
+        val macCaja = printerPrefs.obtenerImpresoraCaja()
+        if (ventaActual != null && detallesActuales.isNotEmpty()) {
+            if (!macCaja.isNullOrEmpty()) {
+                ticketPrinter.imprimir(ventaActual!!, detallesActuales, "Cliente", macCaja)
+            } else {
+                Toast.makeText(this, "No hay impresora de caja configurada", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun recalcularTotal() {
+        totalFinal = subtotalOriginal - descuentoMonto
+        if (totalFinal < 0) totalFinal = 0.0
+        updateUI()
+        calcularRestante()
+    }
+
+    private fun updateUI() {
+        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+        tvSubtotal.text = format.format(subtotalOriginal)
+        tvDescuento.text = "-${format.format(descuentoMonto)}"
+        tvTotalFinal.text = format.format(totalFinal)
+    }
+
+    private fun calcularRestante() {
         val efectivo = etPagoEfectivo.text.toString().toDoubleOrNull() ?: 0.0
         val tarjeta = etPagoTarjeta.text.toString().toDoubleOrNull() ?: 0.0
+
         val pagado = efectivo + tarjeta
         val restante = totalFinal - pagado
 
@@ -94,128 +237,47 @@ class Pagos : AppCompatActivity() {
             tvRestante.setTextColor(getColor(android.R.color.holo_red_dark))
             btnCobrar.isEnabled = false
             btnCobrar.alpha = 0.5f
-        } else if (restante < -0.01) {
-            tvRestante.text = "Excede por: ${format.format(Math.abs(restante))}"
-            tvRestante.setTextColor(getColor(android.R.color.holo_red_dark))
-            btnCobrar.isEnabled = false
-            btnCobrar.alpha = 0.5f
         } else {
-            tvRestante.text = "Completo"
+            val cambio = pagado - totalFinal
+            tvRestante.text = "Cambio: ${format.format(cambio)}"
             tvRestante.setTextColor(getColor(android.R.color.holo_green_dark))
             btnCobrar.isEnabled = true
             btnCobrar.alpha = 1.0f
         }
     }
 
-    private fun procesarCobro() {
-        val efectivo = etPagoEfectivo.text.toString().toDoubleOrNull() ?: 0.0
-        val tarjeta = etPagoTarjeta.text.toString().toDoubleOrNull() ?: 0.0
+    private fun finalizarVenta() {
         val propina = etPropina.text.toString().toDoubleOrNull() ?: 0.0
+        val idMetodoPropina = if (rgMetodoPropina.checkedRadioButtonId == R.id.rbPropinaEfectivo) 1 else 2
 
-        val idMetodoPropina = if (findViewById<android.widget.RadioButton>(R.id.rbPropinaEfectivo).isChecked) 1 else 2
+        val pagoEfectivo = etPagoEfectivo.text.toString().toDoubleOrNull() ?: 0.0
+        val pagoTarjeta = etPagoTarjeta.text.toString().toDoubleOrNull() ?: 0.0
+
+        val listaPagos = mutableListOf<VentaPagoInsert>()
+        if (pagoEfectivo > 0) listaPagos.add(VentaPagoInsert(ventaId, 1, pagoEfectivo))
+        if (pagoTarjeta > 0) listaPagos.add(VentaPagoInsert(ventaId, 2, pagoTarjeta))
 
         lifecycleScope.launch {
-            val listaPagos = mutableListOf<VentaPagoInsert>()
-
-            if (efectivo > 0) {
-                listaPagos.add(VentaPagoInsert(ventaId, 1, efectivo))
-            }
-            if (tarjeta > 0) {
-                listaPagos.add(VentaPagoInsert(ventaId, 2, tarjeta))
-            }
-
             try {
                 ventasRepo.finalizarVentaCompleta(
-                    ventaId,
-                    descuentoMonto,
-                    descuentoPorcentaje,
-                    totalFinal,
-                    propina,
-                    idMetodoPropina,
-                    listaPagos
+                    idVenta = ventaId,
+                    descuentoMonto = descuentoMonto,
+                    descuentoPorcentaje = descuentoPorcentaje,
+                    totalFinal = totalFinal,
+                    propina = propina,
+                    idMetodoPropina = idMetodoPropina,
+                    pagos = listaPagos
                 )
-                Toast.makeText(this@Pagos, "Venta Finalizada", Toast.LENGTH_SHORT).show()
 
-                val intent = Intent(this@Pagos, Pedido::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                Toast.makeText(this@Pagos, "Venta Finalizada", Toast.LENGTH_LONG).show()
+
+                val intent = android.content.Intent(this@Pagos, MainActivity::class.java)
+                intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP or android.content.Intent.FLAG_ACTIVITY_NEW_TASK
                 startActivity(intent)
                 finish()
-
             } catch (e: Exception) {
-                Toast.makeText(this@Pagos, "Error al finalizar venta", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@Pagos, "Error al finalizar: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
-    }
-
-    private fun calcularTotales() {
-        val descuentoPorMonto = descuentoMonto
-        val descuentoPorPorcentaje = totalOriginal * (descuentoPorcentaje / 100.0)
-        var totalDescuento = descuentoPorMonto + descuentoPorPorcentaje
-
-        if (totalDescuento > totalOriginal) totalDescuento = totalOriginal
-        totalFinal = totalOriginal - totalDescuento
-
-        actualizarUI(totalDescuento)
-        validarMontosPago()
-    }
-
-    private fun actualizarUI(totalDescuento: Double) {
-        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
-        tvSubtotal.text = format.format(totalOriginal)
-        tvDescuento.text = "-${format.format(totalDescuento)} ($descuentoPorcentaje%)"
-        tvTotalFinal.text = format.format(totalFinal)
-    }
-
-    private fun showPasswordDialog() {
-        val input = EditText(this)
-        input.hint = "Contraseña"
-        input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-        input.textAlignment = android.view.View.TEXT_ALIGNMENT_CENTER
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle("Autorización Requerida")
-            .setView(input)
-            .setPositiveButton("Aceptar", null)
-            .setNegativeButton("Cancelar", null)
-            .create()
-
-        dialog.show()
-
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (input.text.toString() == "1234") {
-                dialog.dismiss()
-                showDescuentoInputDialog()
-            } else {
-                Toast.makeText(this, "Contraseña Incorrecta", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun showDescuentoInputDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_descuento, null)
-        val etMonto = dialogView.findViewById<EditText>(R.id.etDescuentoMonto)
-        val etPorcentaje = dialogView.findViewById<EditText>(R.id.etDescuentoPorcentaje)
-
-        if (descuentoMonto > 0) etMonto.setText(descuentoMonto.toString())
-        if (descuentoPorcentaje > 0) etPorcentaje.setText(descuentoPorcentaje.toString())
-
-        AlertDialog.Builder(this)
-            .setTitle("Configurar Descuento")
-            .setView(dialogView)
-            .setPositiveButton("Aplicar") { _, _ ->
-                val nuevoMonto = etMonto.text.toString().toDoubleOrNull() ?: 0.0
-                val nuevoPorcentaje = etPorcentaje.text.toString().toIntOrNull() ?: 0
-                val descCalc = nuevoMonto + (totalOriginal * (nuevoPorcentaje / 100.0))
-
-                if (descCalc > totalOriginal) {
-                    Toast.makeText(this, "Descuento inválido", Toast.LENGTH_SHORT).show()
-                } else {
-                    descuentoMonto = nuevoMonto
-                    descuentoPorcentaje = nuevoPorcentaje
-                    calcularTotales()
-                }
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
     }
 }

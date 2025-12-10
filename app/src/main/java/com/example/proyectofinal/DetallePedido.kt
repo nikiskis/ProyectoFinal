@@ -120,7 +120,7 @@ class DetallePedido : AppCompatActivity() {
                     if (nuevoId.isNotBlank()) {
                         lifecycleScope.launch {
                             ventasRepo.updateDatosPedido(ventaId, nuevoId, nuevaDir)
-                            loadVentaInfo() // Recargar UI
+                            loadVentaInfo()
                             Toast.makeText(context, "Información actualizada", Toast.LENGTH_SHORT).show()
                         }
                     }

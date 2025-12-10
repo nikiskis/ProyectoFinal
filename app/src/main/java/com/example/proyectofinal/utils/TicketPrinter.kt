@@ -75,14 +75,17 @@ class TicketPrinter(private val context: Context) {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
         val now = Date()
-        val total = detalles.sumOf { it.precio_unidad * it.cantidad }
+
+        val subtotal = detalles.sumOf { it.precio_unidad * it.cantidad }
+        val descuento = venta.descuento_monto ?: 0.0
+        val totalFinal = subtotal - descuento
 
         val maxAnchoLinea = 32
         var ticket = ""
 
         // LOGO
         try {
-            val logoBitmap = getBitmapFromVectorDrawable(context, R.mipmap.ic_launcher)
+            val logoBitmap = getBitmapFromVectorDrawable(context, R.drawable.mundogrilldos)
             if (logoBitmap != null) {
                 val logoHex = PrinterTextParserImg.bitmapToHexadecimalString(printer, logoBitmap)
                 ticket += "[C]<img>$logoHex</img>\n"
@@ -96,13 +99,13 @@ class TicketPrinter(private val context: Context) {
                 "[L]<b>FECHA: ${dateFormat.format(now)}</b>\n" +
                 "[L]<b>HORA: ${timeFormat.format(now)}</b>\n"
 
-        // DIRECCIÓN (SOLO SI ES DOMICILIO)
+        // DIRECCIÓN
         if (venta.tipo_pedido == "Domicilio" && !venta.direccion.isNullOrBlank()) {
             ticket += "[L]<b>ENTREGA:</b>\n" +
                     "[L]${venta.direccion}\n"
         }
 
-        // CLIENTE / IDENTIFICADOR
+        // CLIENTE
         ticket += "[L]NUM: ${venta.identificador}\n" +
                 "[C]--------------------------------\n"
 
@@ -119,21 +122,29 @@ class TicketPrinter(private val context: Context) {
             }
         }
 
-        // TOTALES Y PIE DE PAGINA
-        ticket += "[C]--------------------------------\n" +
-                "[R]TOTAL: <font size='big'>${format.format(total)}</font>\n" +
+        // SECCIÓN DE TOTALES CON DESCUENTO
+        ticket += "[C]--------------------------------\n"
+
+        if (descuento > 0) {
+            ticket += "[R]Subtotal: ${format.format(subtotal)}\n" +
+                    "[R]Descuento: -${format.format(descuento)}\n"
+        }
+
+        ticket += "[R]TOTAL: <font size='big'>${format.format(totalFinal)}</font>\n" +
                 "[C]--------------------------------\n" +
                 "[C]TICKET NECESARIO PARA LA ENTREGA\n"+
                 "[C]--------------------------------\n" +
                 "[C]SIGUENOS EN FACEBOOK:\n" +
-                "[C]PAGINA DE FACEBOOK\n" +
+                "[C]MUNDO GRILL\n" +
                 "[L]\n" +
                 "[L]\n" +
                 "[C]AGRADECEMOS SU PROPINA\n" +
+                "[L]\n" +
                 "[L]\n[L]\n"
 
         return ticket
     }
+
     private fun generarTicketCocina(venta: Venta, detalles: List<DetalleVenta>, esReimpresion: Boolean): String {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
         val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -144,7 +155,7 @@ class TicketPrinter(private val context: Context) {
         if (esReimpresion) {
             ticket += "[C]<b><font size='big'>REIMPRESION</font></b>\n"
         }
-        // -------------------------------
+
 
         ticket += "[C]<b><font size='big'>MUNDO GRILL</font></b>\n" +
                 "[L]<b>Tipo:</b> ${venta.tipo_pedido}\n" +

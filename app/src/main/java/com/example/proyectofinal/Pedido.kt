@@ -312,7 +312,7 @@ class Pedido : AppCompatActivity() {
 
                     if (impresionesCocinaEnviadas > 0 && !venta.impreso_cocina) {
                         ventasRepo.marcarImpresoCocina(venta.id)
-                        loadPedidos() // Recargar para actualizar estado visual
+                        loadPedidos()
                     }
                 }
 
@@ -324,7 +324,6 @@ class Pedido : AppCompatActivity() {
                     val macCaja = printerPrefs.obtenerImpresoraCaja()
                     if (!macCaja.isNullOrEmpty()) {
                         Toast.makeText(this@Pedido, "Imprimiendo Ticket Cliente...", Toast.LENGTH_SHORT).show()
-                        // Cliente siempre false en 'esReimpresion' para la lógica de TicketPrinter
                         ticketPrinter.imprimir(venta, detalles, "Cliente", macCaja, false)
                     } else {
                         Toast.makeText(this@Pedido, "Configura impresora de Caja", Toast.LENGTH_LONG).show()
@@ -388,7 +387,7 @@ class Pedido : AppCompatActivity() {
 
     private fun createPedido(tipo: String, identificador: String, direccion: String?) {
         lifecycleScope.launch {
-            val fechaActual = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val fechaActual = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
             val nuevaVenta = VentaInsert(
                 fecha = fechaActual,
                 id_estado = 1,
