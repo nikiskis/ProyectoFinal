@@ -46,14 +46,15 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    val supabaseVersion = "2.3.0" // Revisa la última versión en GitHub
+
+    val supabaseVersion = "2.3.0"
     implementation(platform("io.github.jan-tennert.supabase:bom:$supabaseVersion"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
 
-    // Ktor (necesario para las peticiones HTTP)
-    val ktorVersion = "2.3.10" // Revisa la última versión
+    val ktorVersion = "2.3.10"
     implementation("io.ktor:ktor-client-android:$ktorVersion")
 
-    // Kotlinx Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    implementation("com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0")
 }
