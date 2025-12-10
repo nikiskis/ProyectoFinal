@@ -127,6 +127,7 @@ class VentasRepository {
             Log.e("VentasRepo", "Error al marcar impreso cocina", e)
         }
     }
+
     suspend fun updateDescuentoVenta(idVenta: Int, monto: Double, porcentaje: Int) {
         try {
             val updateData = buildJsonObject {
@@ -151,7 +152,7 @@ class VentasRepository {
                     "*, " +
                             "estado:Estado(*), " +
                             "Venta_Pago(*), " +
-                            "Detalle_Venta(*, producto:Producto(id, nombre, id_zona_produccion))"
+                            "Detalle_Venta(*, producto:Producto(*, zona_produccion:Zona_Produccion(*), categoria_producto:Categoria_Producto(*)))"
                 )
             ) {
                 filter {

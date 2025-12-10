@@ -57,4 +57,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     implementation("com.github.DantSu:ESCPOS-ThermalPrinter-Android:3.3.0")
+
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 }
