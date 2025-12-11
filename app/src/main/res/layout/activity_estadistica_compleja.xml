@@ -55,12 +55,6 @@
             android:textStyle="bold"
             android:layout_marginBottom="4dp"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Barras: Venta del producto | Línea: % Acumulado"
-            android:textSize="12sp"
-            android:layout_marginBottom="8dp"/>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
@@ -83,13 +77,6 @@
             android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginBottom="4dp"/>
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Burbuja más grande = Más ventas en ese horario"
-            android:textSize="12sp"
-            android:layout_marginBottom="8dp"/>
 
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
