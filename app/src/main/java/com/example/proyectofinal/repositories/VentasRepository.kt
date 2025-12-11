@@ -168,6 +168,10 @@ class VentasRepository {
         }
     }
 
+    suspend fun getVentasComplejas(): List<Venta> {
+        return getVentasPorRango("2024-01-01 00:00:00", "2030-12-31 23:59:59")
+    }
+
     suspend fun agregarDetalle(detalle: DetalleVentaInsert) {
         try { client[detalleTable].insert(detalle) } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }

@@ -65,6 +65,11 @@ class Estadistica : AppCompatActivity() {
             startActivity(intent)
         }
 
+        findViewById<Button>(R.id.btnAnalisisAvanzado).setOnClickListener {
+            val intent = Intent(this, EstadisticaCompleja::class.java)
+            startActivity(intent)
+        }
+
         setupChartConfig(chartProductos)
         setupChartConfig(chartCategorias)
         setupChartConfig(chartZonas)
