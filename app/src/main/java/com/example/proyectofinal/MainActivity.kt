@@ -28,5 +28,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, CorteCaja::class.java)
             startActivity(intent)
         }
+
+        val botonEstadistica = findViewById<Button>(R.id.btnEstadisticas)
+        botonEstadistica.setOnClickListener {
+            val intent = Intent(this, Estadistica::class.java)
+            startActivity(intent)
+        }
     }
 }

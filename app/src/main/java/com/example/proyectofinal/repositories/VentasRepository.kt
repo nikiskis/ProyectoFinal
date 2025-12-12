@@ -127,6 +127,7 @@ class VentasRepository {
             Log.e("VentasRepo", "Error al marcar impreso cocina", e)
         }
     }
+
     suspend fun updateDescuentoVenta(idVenta: Int, monto: Double, porcentaje: Int) {
         try {
             val updateData = buildJsonObject {
@@ -151,7 +152,7 @@ class VentasRepository {
                     "*, " +
                             "estado:Estado(*), " +
                             "Venta_Pago(*), " +
-                            "Detalle_Venta(*, producto:Producto(id, nombre, id_zona_produccion))"
+                            "Detalle_Venta(*, producto:Producto(*, zona_produccion:Zona_Produccion(*), categoria_producto:Categoria_Producto(*)))"
                 )
             ) {
                 filter {
@@ -165,6 +166,10 @@ class VentasRepository {
             Log.e("VentasRepo", "Error reporte corte: ${e.message}", e)
             emptyList()
         }
+    }
+
+    suspend fun getVentasComplejas(): List<Venta> {
+        return getVentasPorRango("2024-01-01 00:00:00", "2030-12-31 23:59:59")
     }
 
     suspend fun agregarDetalle(detalle: DetalleVentaInsert) {
