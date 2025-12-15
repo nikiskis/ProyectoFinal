@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <EditText
+        android:id="@+id/etNombreInsumo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nombre del insumo"
+        android:inputType="textCapSentences"/>
+
+    <EditText
+        android:id="@+id/etCantidadRequerida"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Cantidad (ej. 5 kg, 2 cajas)"
+        android:inputType="text"
+        android:layout_marginTop="16dp"/>
+
+</LinearLayout>

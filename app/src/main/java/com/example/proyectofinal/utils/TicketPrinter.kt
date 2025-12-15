@@ -182,4 +182,141 @@ class TicketPrinter(private val context: Context) {
         ticket += "[L]\n[L]\n[L]\n"
         return ticket
     }
+
+
+    fun imprimirCorteCaja(
+        fechaInicio: String,
+        fechaFin: String,
+        fondoInicial: Double,
+        ventasEfectivo: Double,
+        ventasTarjeta: Double,
+        costos: Double,
+        ganancia: Double,
+        macAddress: String?,
+        zonasNombres: String
+    ) {
+        if (macAddress.isNullOrEmpty()) {
+            Toast.makeText(context, "No hay impresora de Caja configurada", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(context, "Permiso Bluetooth requerido", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+            val device = bluetoothAdapter.getRemoteDevice(macAddress)
+            val connection = BluetoothConnection(device)
+            val printer = EscPosPrinter(connection, 203, 48f, 32)
+
+            val texto = generarTextoCorte(
+                printer, fechaInicio, fechaFin, fondoInicial,
+                ventasEfectivo, ventasTarjeta, costos, ganancia, zonasNombres
+            )
+
+            printer.printFormattedText(texto)
+
+        } catch (e: Exception) {
+            Log.e("TicketPrinter", "Error imprimiendo corte", e)
+            Toast.makeText(context, "Error al imprimir: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun generarTextoCorte(
+        printer: EscPosPrinter,
+        inicio: String,
+        fin: String,
+        fondo: Double,
+        efectivo: Double,
+        tarjeta: Double,
+        costos: Double,
+        ganancia: Double,
+        zonas: String
+    ): String {
+        val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
+        val dateFormat = SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault())
+        val now = Date()
+
+        val totalCaja = fondo + efectivo
+        val granTotal = efectivo + tarjeta
+
+        var ticket = ""
+        try {
+            val logoBitmap = getBitmapFromVectorDrawable(context, R.drawable.mundogrilldos)
+            if (logoBitmap != null) {
+                val logoHex = PrinterTextParserImg.bitmapToHexadecimalString(printer, logoBitmap)
+                ticket += "[C]<img>$logoHex</img>\n"
+            }
+        } catch (e: Exception) {}
+
+        ticket += "[C]<u><font size='big'>CORTE DE CAJA</font></u>\n" +
+                "[C]Impreso: ${dateFormat.format(now)}\n" +
+                "[C]--------------------------------\n" +
+                "[L]<b>Zonas:</b> $zonas\n" +
+                "[L]<b>Desde:</b> $inicio\n" +
+                "[L]<b>Hasta:</b> $fin\n" +
+                "[C]--------------------------------\n" +
+                "[C]<font size='big'>BALANCE</font>\n" +
+                "[L]Fondo Inicial:[R]${format.format(fondo)}\n" +
+                "[L]Ventas Efectivo (+):[R]${format.format(efectivo)}\n" +
+                "[C]--------------------------------\n" +
+                "[L]<b>TOTAL EN CAJON:</b>[R]<b>${format.format(totalCaja)}</b>\n" +
+                "[C]================================\n" +
+                "[L]Ventas Tarjeta:[R]${format.format(tarjeta)}\n" +
+                "[L]<b>VENTA TOTAL:</b>[R]<b>${format.format(granTotal)}</b>\n" +
+                "[C]--------------------------------\n" +
+                "[L]Costos Prod:[R]-${format.format(costos)}\n" +
+                "[L]<b>UTILIDAD:</b>[R]<b>${format.format(ganancia)}</b>\n" +
+                "[C]--------------------------------\n" +
+                "[C]Firma Cajero\n\n\n[L]\n"
+
+        return ticket
+    }
+
+
+    fun imprimirListaFaltantes(faltantes: List<com.example.proyectofinal.models.Faltante>, macAddress: String?) {
+        if (macAddress.isNullOrEmpty()) {
+            Toast.makeText(context, "Configure impresora de Caja", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        try {
+            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+            val device = bluetoothAdapter.getRemoteDevice(macAddress)
+            val connection = BluetoothConnection(device)
+            val printer = EscPosPrinter(connection, 203, 48f, 32)
+
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val now = Date()
+
+            var ticket = "[C]<u><font size='big'>LISTA DE COMPRAS</font></u>\n" +
+                    "[C]FALTANTES / REPOSICION\n" +
+                    "[C]Fecha: ${dateFormat.format(now)}\n" +
+                    "[C]--------------------------------\n"
+
+            if (faltantes.isEmpty()) {
+                ticket += "[C]No hay faltantes registrados.\n"
+            } else {
+                faltantes.forEach { item ->
+                    ticket += "[L]<b>[ ] ${item.nombre}</b>\n" +
+                            "[R]Cant: ${item.cantidad}\n" +
+                            "[C]- - - - - - - - - - - - - - -\n"
+                }
+            }
+
+            ticket += "[C]--------------------------------\n" +
+                    "[C]Fin de la lista\n\n\n[L]\n"
+
+            printer.printFormattedText(ticket)
+
+        } catch (e: Exception) {
+            Log.e("TicketPrinter", "Error lista faltantes", e)
+            Toast.makeText(context, "Error impresión: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
 }

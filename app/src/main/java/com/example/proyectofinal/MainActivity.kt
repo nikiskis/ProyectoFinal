@@ -34,5 +34,11 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, Estadistica::class.java)
             startActivity(intent)
         }
+
+        val botonFaltantes = findViewById<Button>(R.id.btnListaFaltantes)
+        botonFaltantes.setOnClickListener {
+            val intent = Intent(this, ListaFaltantes::class.java)
+            startActivity(intent)
+        }
     }
 }

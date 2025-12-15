@@ -22,6 +22,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ProyectoFinal">
         <activity
+            android:name=".Proveedores"
+            android:exported="false" />
+        <activity
+            android:name=".ListaFaltantes"
+            android:exported="false" />
+        <activity
             android:name=".EstadisticaCompleja"
             android:exported="false" />
         <activity

@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -11,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal.adapter.ReporteAdapter
 import com.example.proyectofinal.models.Venta
 import com.example.proyectofinal.repositories.VentasRepository
+import com.example.proyectofinal.utils.PrinterPreferences
+import com.example.proyectofinal.utils.TicketPrinter
 import com.google.android.material.switchmaterial.SwitchMaterial
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -24,6 +27,7 @@ class ReporteCorte : AppCompatActivity() {
     private var fechaFin: String = ""
     private var montoInicial: Double = 0.0
     private var listaZonasIds: ArrayList<Int> = ArrayList()
+
     private lateinit var tvFondoInicial: TextView
     private lateinit var tvTotalEfectivo: TextView
     private lateinit var tvTotalCaja: TextView
@@ -36,6 +40,12 @@ class ReporteCorte : AppCompatActivity() {
     private lateinit var rvCancelados: RecyclerView
     private lateinit var rvTodos: RecyclerView
     private lateinit var switchDesglose: SwitchMaterial
+    private var calcFondo: Double = 0.0
+    private var calcEfectivo: Double = 0.0
+    private var calcTarjeta: Double = 0.0
+    private var calcCostos: Double = 0.0
+    private var calcGanancia: Double = 0.0
+    private var nombresZonasStr: String = "Todas"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,6 +84,10 @@ class ReporteCorte : AppCompatActivity() {
             rvTodos.visibility = if (isChecked) View.VISIBLE else View.GONE
         }
 
+        findViewById<Button>(R.id.btnImprimirCorte).setOnClickListener {
+            imprimirReporte()
+        }
+
         findViewById<Button>(R.id.btnCerrar).setOnClickListener { finish() }
     }
 
@@ -97,9 +111,15 @@ class ReporteCorte : AppCompatActivity() {
     }
 
     private fun calcularTotales(ventas: List<Venta>) {
-        var sumaEfectivoVentas = 0.0
-        var sumaTarjetaVentas = 0.0
-        var sumaCostoProduccion = 0.0
+        calcEfectivo = 0.0
+        calcTarjeta = 0.0
+        calcCostos = 0.0
+        calcFondo = montoInicial
+        nombresZonasStr = if (listaZonasIds.isEmpty()) {
+            "GLOBAL (Todas)"
+        } else {
+            "Zonas Seleccionadas (${listaZonasIds.size})"
+        }
 
         val listaDescuentos = ArrayList<Venta>()
         val listaCancelados = ArrayList<Venta>()
@@ -131,9 +151,9 @@ class ReporteCorte : AppCompatActivity() {
             venta.pagos.forEach { pago ->
                 val montoAjustado = pago.monto * factor
                 if (pago.id_metodo_pago == 1) {
-                    sumaEfectivoVentas += montoAjustado
+                    calcEfectivo += montoAjustado
                 } else if (pago.id_metodo_pago == 2) {
-                    sumaTarjetaVentas += montoAjustado
+                    calcTarjeta += montoAjustado
                 }
             }
 
@@ -141,29 +161,52 @@ class ReporteCorte : AppCompatActivity() {
                 val zonaProd = detalle.producto?.id_zona_produccion ?: 0
 
                 if (listaZonasIds.isEmpty() || listaZonasIds.contains(zonaProd)) {
-                    sumaCostoProduccion += (detalle.costo_unidad * detalle.cantidad)
+                    calcCostos += (detalle.costo_unidad * detalle.cantidad)
                 }
             }
         }
 
-        val totalEnCaja = montoInicial + sumaEfectivoVentas
-
-        val granTotalVentas = sumaEfectivoVentas + sumaTarjetaVentas
-        val ganancia = granTotalVentas - sumaCostoProduccion
+        val totalEnCaja = calcFondo + calcEfectivo
+        val granTotalVentas = calcEfectivo + calcTarjeta
+        calcGanancia = granTotalVentas - calcCostos
 
         val format = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
 
-        tvFondoInicial.text = "Fondo Inicial: ${format.format(montoInicial)}"
-        tvTotalEfectivo.text = "Ventas Efectivo: ${format.format(sumaEfectivoVentas)}"
+        tvFondoInicial.text = "Fondo Inicial: ${format.format(calcFondo)}"
+        tvTotalEfectivo.text = "Ventas Efectivo: ${format.format(calcEfectivo)}"
         tvTotalCaja.text = "TOTAL EN CAJA: ${format.format(totalEnCaja)}"
-        tvTotalTarjeta.text = "Ventas Tarjeta: ${format.format(sumaTarjetaVentas)}"
+        tvTotalTarjeta.text = "Ventas Tarjeta: ${format.format(calcTarjeta)}"
 
         tvGranTotalVentas.text = "Total (Efectivo + Tarjeta): ${format.format(granTotalVentas)}"
-        tvCostoProduccion.text = "Costos de Producción: ${format.format(sumaCostoProduccion)}"
-        tvGanancia.text = "Ganancias: ${format.format(ganancia)}"
+        tvCostoProduccion.text = "Costos de Producción: ${format.format(calcCostos)}"
+        tvGanancia.text = "Ganancias: ${format.format(calcGanancia)}"
 
         rvDescuentos.adapter = ReporteAdapter(listaDescuentos, "DESCUENTO", listaZonasIds)
         rvCancelados.adapter = ReporteAdapter(listaCancelados, "CANCELADO", listaZonasIds)
         rvTodos.adapter = ReporteAdapter(ventas, "NORMAL", listaZonasIds)
+    }
+
+    private fun imprimirReporte() {
+        val printerPrefs = PrinterPreferences(this)
+        val macCaja = printerPrefs.obtenerImpresoraCaja()
+
+        if (macCaja.isNullOrEmpty()) {
+            Toast.makeText(this, "No hay impresora configurada", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val ticketPrinter = TicketPrinter(this)
+
+        ticketPrinter.imprimirCorteCaja(
+            fechaInicio = fechaInicio.take(16),
+            fechaFin = fechaFin.take(16),
+            fondoInicial = calcFondo,
+            ventasEfectivo = calcEfectivo,
+            ventasTarjeta = calcTarjeta,
+            costos = calcCostos,
+            ganancia = calcGanancia,
+            macAddress = macCaja,
+            zonasNombres = nombresZonasStr
+        )
     }
 }

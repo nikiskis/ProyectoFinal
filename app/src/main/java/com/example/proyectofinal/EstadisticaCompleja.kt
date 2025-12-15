@@ -216,7 +216,7 @@ class EstadisticaCompleja : AppCompatActivity() {
         dataSet.color = Color.parseColor("#E53935")
         dataSet.valueTextColor = Color.WHITE
         dataSet.valueTextSize = 8f
-        dataSet.isNormalizeSizeEnabled = false
+        dataSet.isNormalizeSizeEnabled = true
 
         val bubbleData = BubbleData(dataSet)
         chartHeatmap.data = bubbleData
