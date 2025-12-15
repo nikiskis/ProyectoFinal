@@ -24,6 +24,8 @@ class IngredientesAdapter(
         val costoTextView: TextView = itemView.findViewById(R.id.costoTextView)
         val editButton: ImageButton = itemView.findViewById(R.id.editButton)
         val deleteButton: ImageButton = itemView.findViewById(R.id.deleteButton)
+        val stockActualTextView: TextView = itemView.findViewById(R.id.stockActualTextView)
+        val stockMinimoTextView: TextView = itemView.findViewById(R.id.stockMinimoTextView)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): IngredienteViewHolder {
@@ -36,6 +38,8 @@ class IngredientesAdapter(
 
         holder.nameTextView.text = ingrediente.nombre
         holder.estadoTextView.text = ingrediente.estado.estado
+        holder.stockActualTextView.text = "Stock: ${ingrediente.stock_actual}"
+        holder.stockMinimoTextView.text = "Mín: ${ingrediente.stock_minimo}"
 
         val format: NumberFormat = NumberFormat.getCurrencyInstance(Locale("es", "MX"))
         holder.costoTextView.text = "Costo: ${format.format(ingrediente.costo)}"

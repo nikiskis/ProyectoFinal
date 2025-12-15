@@ -7,6 +7,8 @@ data class Ingrediente(
     val id: Int,
     val nombre: String,
     val costo: Double,
+    val stock_actual: Double,
+    val stock_minimo: Double,
     val id_estado: Int,
     val estado: Estado
 )
@@ -21,6 +23,8 @@ data class Estado(
 data class IngredienteInsert(
     val nombre: String,
     val costo: Double,
+    val stock_actual: Double,
+    val stock_minimo: Double,
     val id_estado: Int
 )
 
@@ -28,5 +32,7 @@ data class IngredienteInsert(
 data class IngredienteUpdate(
     val nombre: String,
     val costo: Double,
+    val stock_actual: Double,
+    val stock_minimo: Double,
     val id_estado: Int
 )

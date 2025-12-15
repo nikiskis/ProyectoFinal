@@ -1,8 +1,10 @@
+// Archivo: app/src/main/java/com/example/proyectofinal/repositories/VentasRepository.kt
 package com.example.proyectofinal.repositories
 
 import android.util.Log
 import com.example.proyectofinal.models.DetalleVenta
 import com.example.proyectofinal.models.DetalleVentaInsert
+import com.example.proyectofinal.models.FaltanteInsert
 import com.example.proyectofinal.models.Venta
 import com.example.proyectofinal.models.VentaInsert
 import com.example.proyectofinal.models.VentaPagoInsert
@@ -10,6 +12,7 @@ import com.example.proyectofinal.network.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -19,6 +22,7 @@ class VentasRepository {
     private val tableName = "Venta"
     private val detalleTable = "Detalle_Venta"
     private val pagosTable = "Venta_Pago"
+    private val faltantesRepo = FaltantesRepository() // Instancia para agregar faltantes
 
     suspend fun getVentasActivas(): List<Venta> {
         return try {
@@ -89,12 +93,75 @@ class VentasRepository {
                 put("id_estado", 3)
             }
             client[tableName].update(datosVenta) { filter { eq("id", idVenta) } }
+
             if (pagos.isNotEmpty()) {
                 client[pagosTable].insert(pagos)
             }
+
+            descontarStockDeVenta(idVenta)
+
         } catch (e: Exception) {
             Log.e("VentasRepo", "Error CRÍTICO al finalizar venta: ${e.message}", e)
             throw e
+        }
+    }
+
+    private suspend fun descontarStockDeVenta(idVenta: Int) {
+        try {
+            val response = client[detalleTable].select(
+                columns = Columns.raw("cantidad, producto:Producto(producto_ingrediente:Producto_Ingrediente(id_ingrediente, cantidad))")
+            ) {
+                filter { eq("id_venta", idVenta) }
+            }
+            val detalles = response.decodeList<DetalleStockHelper>()
+
+            val mapaDescuento = mutableMapOf<Int, Double>()
+            detalles.forEach { detalle ->
+                detalle.producto.producto_ingrediente.forEach { relacion ->
+                    val cantidadTotalIngrediente = (detalle.cantidad * relacion.cantidad).toDouble()
+                    val acumulado = mapaDescuento.getOrDefault(relacion.id_ingrediente, 0.0)
+                    mapaDescuento[relacion.id_ingrediente] = acumulado + cantidadTotalIngrediente
+                }
+            }
+
+            if (mapaDescuento.isNotEmpty()) {
+                val idsIngredientes = mapaDescuento.keys.toList()
+
+                val ingredientesResponse = client["Ingrediente"].select(
+                    columns = Columns.raw("id, nombre, stock_actual, stock_minimo")
+                ) {
+                    filter { isIn("id", idsIngredientes) }
+                }
+                val ingredientesActuales = ingredientesResponse.decodeList<IngredienteStockHelper>()
+
+                ingredientesActuales.forEach { ing ->
+                    val cantidadADescontar = mapaDescuento[ing.id] ?: 0.0
+                    val nuevoStock = ing.stock_actual - cantidadADescontar
+
+                    client["Ingrediente"].update(
+                        mapOf("stock_actual" to nuevoStock)
+                    ) {
+                        filter { eq("id", ing.id) }
+                    }
+                    Log.i("VentasRepo", "Stock actualizado ${ing.nombre}: $nuevoStock")
+
+                    if (nuevoStock <= ing.stock_minimo) {
+                        val cantidadAPedir = ing.stock_minimo * 4
+                        try {
+                            val nuevoFaltante = FaltanteInsert(
+                                nombre = ing.nombre,
+                                cantidad = cantidadAPedir.toString()
+                            )
+                            faltantesRepo.agregarFaltante(nuevoFaltante)
+                            Log.i("VentasRepo", "ALERTA: ${ing.nombre} bajo de stock. Agregado a Faltantes.")
+                        } catch (e: Exception) {
+                            Log.e("VentasRepo", "Error al agregar a faltantes automático", e)
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("VentasRepo", "Error al descontar stock de ingredientes: ${e.message}", e)
         }
     }
 
@@ -192,3 +259,28 @@ class VentasRepository {
         try { client[detalleTable].update(mapOf("cantidad" to nuevaCantidad)) { filter { eq("id", idDetalle) } } } catch (e: Exception) { Log.e("VentasRepo", "Error", e) }
     }
 }
+
+@Serializable
+data class DetalleStockHelper(
+    val cantidad: Int,
+    val producto: ProductoStockHelper
+)
+
+@Serializable
+data class ProductoStockHelper(
+    val producto_ingrediente: List<RelacionIngredienteHelper> = emptyList()
+)
+
+@Serializable
+data class RelacionIngredienteHelper(
+    val id_ingrediente: Int,
+    val cantidad: Int
+)
+
+@Serializable
+data class IngredienteStockHelper(
+    val id: Int,
+    val nombre: String,
+    val stock_actual: Double,
+    val stock_minimo: Double
+)

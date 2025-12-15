@@ -81,6 +81,8 @@ class Ingredientes : AppCompatActivity() {
 
         val nombreEditText = dialogView.findViewById<EditText>(R.id.nombreEditText)
         val costoEditText = dialogView.findViewById<EditText>(R.id.costoEditText)
+        val stockActualEditText = dialogView.findViewById<EditText>(R.id.stockActualEditText)
+        val stockMinimoEditText = dialogView.findViewById<EditText>(R.id.stockMinimoEditText)
         val estadoSpinner = dialogView.findViewById<Spinner>(R.id.estadoSpinner)
 
         val estados = listOf("Activo", "Inactivo")
@@ -93,6 +95,8 @@ class Ingredientes : AppCompatActivity() {
             dialogTitle = "Editar Ingrediente"
             nombreEditText.setText(ingrediente.nombre)
             costoEditText.setText(ingrediente.costo.toString())
+            stockActualEditText.setText(ingrediente.stock_actual.toString())
+            stockMinimoEditText.setText(ingrediente.stock_minimo.toString())
             val estadoPosition = if (ingrediente.id_estado == 1) 0 else 1
             estadoSpinner.setSelection(estadoPosition)
         } else {
@@ -105,16 +109,18 @@ class Ingredientes : AppCompatActivity() {
             .setPositiveButton(if (ingrediente == null) "Agregar" else "Guardar") { _, _ ->
                 val nombre = nombreEditText.text.toString()
                 val costo = costoEditText.text.toString().toDoubleOrNull()
+                val stockActual = stockActualEditText.text.toString().toDoubleOrNull() ?: 0.0
+                val stockMinimo = stockMinimoEditText.text.toString().toDoubleOrNull() ?: 0.0
                 val estadoSeleccionado = estadoSpinner.selectedItem.toString()
                 val estadoId = if (estadoSeleccionado == "Activo") 1 else 2
 
                 if (nombre.isNotBlank() && costo != null) {
                     lifecycleScope.launch {
                         if (ingrediente == null) {
-                            val nuevoIngrediente = IngredienteInsert(nombre, costo, estadoId)
+                            val nuevoIngrediente = IngredienteInsert(nombre, costo, stockActual, stockMinimo, estadoId)
                             ingredientesRepo.crearIngrediente(nuevoIngrediente)
                         } else {
-                            val ingredienteActualizado = IngredienteUpdate(nombre, costo, estadoId)
+                            val ingredienteActualizado = IngredienteUpdate(nombre, costo, stockActual, stockMinimo, estadoId)
                             ingredientesRepo.updateIngrediente(ingrediente.id, ingredienteActualizado)
                         }
                         loadIngredientes()

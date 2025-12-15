@@ -47,6 +47,9 @@ class ReporteCorte : AppCompatActivity() {
     private var calcGanancia: Double = 0.0
     private var nombresZonasStr: String = "Todas"
 
+    private lateinit var tvTotalPropinas: TextView
+    private var calcPropinas: Double = 0.0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_reporte_corte)
@@ -78,6 +81,10 @@ class ReporteCorte : AppCompatActivity() {
 
         rvTodos = findViewById(R.id.rvTodosLosPedidos)
         rvTodos.layoutManager = LinearLayoutManager(this)
+
+        tvGranTotalVentas = findViewById(R.id.tvGranTotalVentas)
+        tvTotalPropinas = findViewById(R.id.tvTotalPropinas)
+        tvCostoProduccion = findViewById(R.id.tvCostoProduccion)
 
         switchDesglose = findViewById(R.id.switchDesglose)
         switchDesglose.setOnCheckedChangeListener { _, isChecked ->
@@ -114,6 +121,7 @@ class ReporteCorte : AppCompatActivity() {
         calcEfectivo = 0.0
         calcTarjeta = 0.0
         calcCostos = 0.0
+        calcPropinas = 0.0
         calcFondo = montoInicial
         nombresZonasStr = if (listaZonasIds.isEmpty()) {
             "GLOBAL (Todas)"
@@ -148,6 +156,8 @@ class ReporteCorte : AppCompatActivity() {
                 factor = if (totalVentaBruto > 0) totalZona / totalVentaBruto else 0.0
             }
 
+            calcPropinas += (venta.propina ?: 0.0) * factor
+
             venta.pagos.forEach { pago ->
                 val montoAjustado = pago.monto * factor
                 if (pago.id_metodo_pago == 1) {
@@ -178,6 +188,7 @@ class ReporteCorte : AppCompatActivity() {
         tvTotalTarjeta.text = "Ventas Tarjeta: ${format.format(calcTarjeta)}"
 
         tvGranTotalVentas.text = "Total (Efectivo + Tarjeta): ${format.format(granTotalVentas)}"
+        tvTotalPropinas.text = "Propinas del Periodo: ${format.format(calcPropinas)}"
         tvCostoProduccion.text = "Costos de Producción: ${format.format(calcCostos)}"
         tvGanancia.text = "Ganancias: ${format.format(calcGanancia)}"
 

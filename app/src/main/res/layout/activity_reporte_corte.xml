@@ -89,6 +89,16 @@
                     android:textColor="#333333"/>
 
                 <TextView
+                    android:id="@+id/tvTotalPropinas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Propinas del Periodo: $0.00"
+                    android:textSize="18sp"
+                    android:textStyle="italic"
+                    android:layout_marginTop="4dp"
+                    android:textColor="#F57F17"/>
+
+                <TextView
                     android:id="@+id/tvCostoProduccion"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

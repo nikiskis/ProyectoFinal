@@ -117,7 +117,7 @@
                 android:id="@+id/btnListaFaltantes"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:text="Lista de Faltantes"
+                android:text="Lista de Faltantes y\nProveedores"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:backgroundTint="#00A9BD"

@@ -1,3 +1,4 @@
+// 2. Modificar: app/src/main/java/com/example/proyectofinal/adapter/ProveedoresAdapter.kt
 package com.example.proyectofinal.adapter
 
 import android.view.LayoutInflater
@@ -13,7 +14,8 @@ class ProveedoresAdapter(
     private var lista: MutableList<Proveedor>,
     private val onEdit: (Proveedor) -> Unit,
     private val onDelete: (Proveedor) -> Unit,
-    private val onLink: (Proveedor) -> Unit
+    private val onLink: (Proveedor) -> Unit,
+    private val onCall: (String) -> Unit // Nuevo callback para llamar
 ) : RecyclerView.Adapter<ProveedoresAdapter.ViewHolder>() {
 
     inner class ViewHolder(v: View) : RecyclerView.ViewHolder(v) {
@@ -24,6 +26,7 @@ class ProveedoresAdapter(
         val btnEdit: ImageButton = v.findViewById(R.id.btnEditProv)
         val btnDelete: ImageButton = v.findViewById(R.id.btnDeleteProv)
         val btnLink: ImageButton = v.findViewById(R.id.btnLinkIngrediente)
+        val btnCall: ImageButton = v.findViewById(R.id.btnCallProv) // Nuevo botón
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -49,6 +52,12 @@ class ProveedoresAdapter(
         holder.btnEdit.setOnClickListener { onEdit(p) }
         holder.btnDelete.setOnClickListener { onDelete(p) }
         holder.btnLink.setOnClickListener { onLink(p) }
+
+        holder.btnCall.setOnClickListener {
+            if (p.telefono.isNotBlank()) {
+                onCall(p.telefono)
+            }
+        }
     }
 
     override fun getItemCount() = lista.size

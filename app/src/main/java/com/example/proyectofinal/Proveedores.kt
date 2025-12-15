@@ -1,5 +1,7 @@
 package com.example.proyectofinal
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.widget.ArrayAdapter
@@ -44,10 +46,21 @@ class Proveedores : AppCompatActivity() {
         adapter = ProveedoresAdapter(mutableListOf(),
             onEdit = { prov -> showDialogoGestion(prov) },
             onDelete = { prov -> showDialogoEliminar(prov) },
-            onLink = { prov -> showDialogoLink(prov) }
+            onLink = { prov -> showDialogoLink(prov) },
+            onCall = { telefono -> realizarLlamada(telefono) }
         )
         rvProveedores.adapter = adapter
         rvProveedores.layoutManager = LinearLayoutManager(this)
+    }
+
+    private fun realizarLlamada(telefono: String) {
+        try {
+            val intent = Intent(Intent.ACTION_DIAL)
+            intent.data = Uri.parse("tel:$telefono")
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "No se pudo abrir el teléfono", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun cargarDatos() {
