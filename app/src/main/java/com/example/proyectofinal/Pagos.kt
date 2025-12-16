@@ -132,7 +132,7 @@ class Pagos : AppCompatActivity() {
             .setView(input)
             .setPositiveButton("Aceptar") { dialog, _ ->
                 val password = input.text.toString()
-                if (password == "1234") { // Contraseña quemada, igual que en cancelación
+                if (password == "1234") {
                     showDescuentoDialog()
                 } else {
                     Toast.makeText(this, "Contraseña incorrecta", Toast.LENGTH_SHORT).show()
@@ -241,8 +241,14 @@ class Pagos : AppCompatActivity() {
             val cambio = pagado - totalFinal
             tvRestante.text = "Cambio: ${format.format(cambio)}"
             tvRestante.setTextColor(getColor(android.R.color.holo_green_dark))
-            btnCobrar.isEnabled = true
-            btnCobrar.alpha = 1.0f
+
+            if (cambio > 0.01) {
+                btnCobrar.isEnabled = false
+                btnCobrar.alpha = 0.5f
+            } else {
+                btnCobrar.isEnabled = true
+                btnCobrar.alpha = 1.0f
+            }
         }
     }
 
